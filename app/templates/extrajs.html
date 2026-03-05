@@ -1,0 +1,47 @@
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    processEnvironments: true
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+  }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathlive@0.108.3/mathlive.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/viewerjs@1.11.7/dist/viewer.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('image-container');
+        if (container) {
+            const viewer = new Viewer(container, {
+                inline: false,
+                button: true,
+                navbar: false,
+                title: true,
+                toolbar: {
+                    zoomIn: 4,
+                    zoomOut: 4,
+                    reset: 4,
+                    rotateLeft: 4,
+                    rotateRight: 4,
+                    flipHorizontal: 4,
+                    flipVertical: 4,
+                },
+                movable: true,
+                rotatable: true,
+                scalable: true,
+                zoomable: true,
+                zoomOnWheel: true,
+                wheelZoomRatio: 0.05,
+                touch: true,
+                transition: true,
+                fullscreen: true,
+            });
+        }
+    });
+</script>

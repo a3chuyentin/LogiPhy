@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}{% endblock %} | LogiPhy</title>
+    {% include 'extracss.html' %}
 </head>
 <body>
     <div>
         {% block content %}{% endblock %}
     </div>
+    {% include 'extrajs.html' %}
 </body>
 </html>
