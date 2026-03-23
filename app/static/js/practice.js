@@ -519,6 +519,7 @@ class QuestionManager {
             submitBtn.style.display = 'none';
         }
         
+        const finalAnswerLink = DomUtils.getElement('final-answer-link');
         if (finalAnswerLink) {
             finalAnswerLink.style.display = 'none';
         }
@@ -542,8 +543,6 @@ class QuestionManager {
             }
             
             practiceState.pendingExplain = explain;
-            
-            const finalAnswerLink = DomUtils.getElement('final-answer-link');
             
             showResultPopup(isCorrect, explain, () => {
                 this.showExplanationResult(explain);

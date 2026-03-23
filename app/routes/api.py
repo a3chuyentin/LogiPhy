@@ -10,11 +10,9 @@ logger = logging.getLogger(__name__)
 @api_bp.route('/api/rankings')
 @login_required
 def get_rankings():
-    """API lấy dữ liệu xếp hạng"""
     try:
         rankings = db.get_rankings(limit=50)
 
-        # Format ranking data
         rank_data = []
         for rank, user_data in enumerate(rankings, 1):
             logger.info(f"User {user_data['username']} - selecteditem: {user_data.get('selecteditem')}")
@@ -35,7 +33,6 @@ def get_rankings():
 @api_bp.route('/api/user/points')
 @login_required
 def get_user_points():
-    """API lấy điểm của user"""
     try:
         user_data = db.get_user_data(session['username'])
         if user_data:

@@ -13,15 +13,12 @@ class Database:
         self.init_db()
 
     def get_connection(self):
-        """Get database connection"""
         return sqlite3.connect(self.db_path)
 
     def init_db(self):
-        """Initialize database tables"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Create users table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS users (
                     username TEXT PRIMARY KEY,
@@ -33,17 +30,14 @@ class Database:
                 )
             ''')
             
-            # Create items columns dynamically
             cursor.execute("PRAGMA table_info(users)")
             existing_columns = [column[1] for column in cursor.fetchall()]
             
-            # Add default item columns
             default_items = ['none']
             for item in default_items:
                 if item not in existing_columns:
                     cursor.execute(f"ALTER TABLE users ADD COLUMN {item} BOOLEAN DEFAULT 0")
             
-            # Create admin user if not exists
             cursor.execute("SELECT * FROM users WHERE username = 'admin'")
             if not cursor.fetchone():
                 hashed_password = hashlib.sha256('admin123'.encode()).hexdigest()
@@ -55,18 +49,15 @@ class Database:
             conn.commit()
 
     def hash_password(self, password: str) -> str:
-        """Hash password using SHA256"""
         return hashlib.sha256(password.encode()).hexdigest()
 
     def user_exists(self, username: str) -> bool:
-        """Check if user exists"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT username FROM users WHERE username = ?", (username,))
             return cursor.fetchone() is not None
 
     def login_user(self, username: str, password: str) -> bool:
-        """Verify user login"""
         hashed_password = self.hash_password(password)
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -77,7 +68,6 @@ class Database:
             return cursor.fetchone() is not None
 
     def register_user(self, username: str, password: str) -> bool:
-        """Register new user"""
         if self.user_exists(username):
             return False
         
@@ -92,7 +82,6 @@ class Database:
             return True
 
     def get_user_data(self, username: str) -> Optional[Dict[str, Any]]:
-        """Get user data"""
         with self.get_connection() as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -101,7 +90,6 @@ class Database:
             return dict(row) if row else None
 
     def update_points(self, username: str, totalpoint: int, currentpoint: int) -> bool:
-        """Update user points"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
@@ -113,7 +101,6 @@ class Database:
             return cursor.rowcount > 0
 
     def update_current_point(self, username: str, currentpoint: int) -> bool:
-        """Update current points only"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
@@ -125,7 +112,6 @@ class Database:
             return cursor.rowcount > 0
 
     def update_field(self, username: str, field: str, value: Any) -> bool:
-        """Update specific field in users table"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(f"UPDATE users SET {field} = ? WHERE username = ?", (value, username))
@@ -133,29 +119,35 @@ class Database:
             return cursor.rowcount > 0
 
     def update_selected_item(self, username: str, item_id: str) -> bool:
-        """Update selected item for user"""
         return self.update_field(username, 'selecteditem', item_id)
 
     def update_user_password(self, username: str, new_password: str) -> bool:
-        """Update user password"""
         hashed_password = self.hash_password(new_password)
         return self.update_field(username, 'password', hashed_password)
 
-    def get_rankings(self, limit: int = 50) -> List[Dict[str, Any]]:
-        """Get user rankings"""
+    def get_rankings(self, limit: int = 50, exclude_admin: bool = True) -> List[Dict[str, Any]]:
         with self.get_connection() as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute('''
-                SELECT username, totalpoint, selecteditem 
-                FROM users 
-                ORDER BY totalpoint DESC 
-                LIMIT ?
-            ''', (limit,))
+            
+            if exclude_admin:
+                cursor.execute('''
+                    SELECT username, totalpoint, selecteditem 
+                    FROM users 
+                    WHERE is_admin = 0
+                    ORDER BY totalpoint DESC 
+                    LIMIT ?
+                ''', (limit,))
+            else:
+                cursor.execute('''
+                    SELECT username, totalpoint, selecteditem 
+                    FROM users 
+                    ORDER BY totalpoint DESC 
+                    LIMIT ?
+                ''', (limit,))
             return [dict(row) for row in cursor.fetchall()]
 
     def get_all_users(self) -> List[Dict[str, Any]]:
-        """Get all users (for admin)"""
         with self.get_connection() as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -163,16 +155,13 @@ class Database:
             return [dict(row) for row in cursor.fetchall()]
 
     def is_admin(self, username: str) -> bool:
-        """Check if user is admin"""
         user_data = self.get_user_data(username)
         return user_data and user_data.get('is_admin', False)
 
     def update_user_points(self, username: str, totalpoint: int, currentpoint: int) -> bool:
-        """Update user points (admin function)"""
         return self.update_points(username, totalpoint, currentpoint)
 
     def delete_user(self, username: str) -> bool:
-        """Delete user (admin function)"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM users WHERE username = ?", (username,))

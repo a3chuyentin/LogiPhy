@@ -17,7 +17,6 @@ def shop_page():
 @shop_bp.route('/api/shop/items')
 @login_required
 def get_shop_items():
-    """API lấy danh sách items trong shop"""
     try:
         with open(Config.SHOP_ITEMS_FILE, 'r', encoding='utf-8') as file:
             shop_data = json.load(file)
@@ -29,7 +28,6 @@ def get_shop_items():
 @shop_bp.route('/api/shop/buy', methods=['POST'])
 @login_required
 def buy_item():
-    """API mua item từ shop"""
     data = request.get_json()
     logger.info(f"Buy item request data: {data}")
 
@@ -43,7 +41,6 @@ def buy_item():
         return jsonify({'success': False, 'message': 'Thiếu thông tin item'}), 400
 
     try:
-        # Get user info
         username = session['username']
         user_data = db.get_user_data(username)
         logger.info(f"User data: {user_data}")
@@ -51,7 +48,6 @@ def buy_item():
         if not user_data:
             return jsonify({'success': False, 'message': 'Không tìm thấy thông tin user'}), 404
 
-        # Get item info from shop
         with open(Config.SHOP_ITEMS_FILE, 'r', encoding='utf-8') as file:
             shop_data = json.load(file)
 
@@ -66,14 +62,12 @@ def buy_item():
 
         logger.info(f"Item info: {item_info}")
 
-        # Check if user already owns the item
         owns_item = user_data.get(item_id, False)
         logger.info(f"User owns {item_id}: {owns_item}")
 
         if owns_item:
             return jsonify({'success': False, 'message': 'Bạn đã sở hữu item này'}), 400
 
-        # Check if user has enough points
         current_points = user_data.get('currentpoint', 0)
         item_price = item_info['price']
 
@@ -85,7 +79,6 @@ def buy_item():
                 'message': f'Không đủ điểm để mua. Bạn có {current_points} điểm, cần {item_price} điểm'
             }), 400
 
-        # Purchase item
         new_current_points = current_points - item_price
 
         logger.info(f"Updating field {item_id} to True")
@@ -111,13 +104,11 @@ def buy_item():
 @shop_bp.route('/api/inventory')
 @login_required
 def get_inventory():
-    """API lấy inventory của user"""
     try:
         user_data = db.get_user_data(session['username'])
         if not user_data:
             return jsonify({'success': False, 'error': 'Không tìm thấy user'}), 404
 
-        # Get items from shop for complete info
         with open(Config.SHOP_ITEMS_FILE, 'r', encoding='utf-8') as file:
             shop_data = json.load(file)
 
@@ -146,7 +137,6 @@ def get_inventory():
 @shop_bp.route('/api/inventory/select', methods=['POST'])
 @login_required
 def select_item():
-    """API chọn item để sử dụng"""
     data = request.get_json()
     if not data:
         return jsonify({'success': False, 'message': 'Không có dữ liệu'}), 400
@@ -157,12 +147,10 @@ def select_item():
         return jsonify({'success': False, 'message': 'Thiếu thông tin item'}), 400
 
     try:
-        # Check if user owns the item
         user_data = db.get_user_data(session['username'])
         if not user_data.get(item_id, False):
             return jsonify({'success': False, 'message': 'Bạn không sở hữu item này'}), 400
 
-        # Update selected item
         db.update_selected_item(session['username'], item_id)
 
         return jsonify({'success': True, 'message': 'Đã chọn item thành công!'})

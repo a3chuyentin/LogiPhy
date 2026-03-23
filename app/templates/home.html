@@ -3,12 +3,10 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
 {% endblock %}
 {% block content %}
-<!-- Background Animation -->
 <div class="bg-animation"></div>
 
 <div class="home-container">
     <div class="home-card">
-        <!-- User Header -->
         <div class="user-header">
             <h1>Chào, <span class="username-text">{{ username }}</span>! 👋</h1>
             <p class="tagline">Tiếp tục hành trình học tập của bạn</p>
@@ -19,7 +17,6 @@
             {% endif %}
         </div>
 
-        <!-- User Stats -->
         <div class="user-stats">
             <div class="stat-item">
                 <span class="stat-label">⭐ Điểm tích lũy</span>
@@ -31,10 +28,8 @@
             </div>
         </div>
 
-        <!-- Selected Item Display -->
         <div id="selected-item-display" class="selected-item-box"></div>
 
-        <!-- Tabs Navigation -->
         <div class="tabs-nav">
             <button class="tab-btn" onclick="switchTab('learning')">
                 <span>📚</span> Học tập
@@ -53,7 +48,6 @@
             </button>
         </div>
 
-        <!-- Tab Panes -->
         <div id="learning" class="tab-pane">
             <div class="learning-grid">
                 <div class="mode-button study-btn" onclick="navigateToStudy()">
@@ -99,9 +93,7 @@
                 <h3>🏆 Bảng xếp hạng toàn cộng đồng</h3>
             </div>
             
-            <!-- User Rank Display -->
             <div id="user-rank-box" class="user-rank-display">
-                <!-- User rank will be populated by JavaScript -->
             </div>
             
             <div class="scrollable-wrapper ranking-scroll">

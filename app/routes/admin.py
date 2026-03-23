@@ -10,13 +10,11 @@ logger = logging.getLogger(__name__)
 @admin_bp.route('/admin')
 @admin_required
 def admin_page():
-    """Trang admin panel"""
     return render_template('admin.html', username=session.get('username'))
 
 @admin_bp.route('/api/admin/users')
 @api_admin_required
 def admin_get_users():
-    """API lấy danh sách users (chỉ admin)"""
     try:
         users = db.get_all_users()
         return jsonify({'success': True, 'users': users})
@@ -27,17 +25,14 @@ def admin_get_users():
 @admin_bp.route('/api/admin/stats')
 @api_admin_required
 def admin_get_stats():
-    """API lấy thống kê hệ thống (chỉ admin)"""
     try:
         users = db.get_all_users()
         total_users = len(users)
         total_points = sum(user.get('totalpoint', 0) for user in users)
 
-        # Find top user
         top_user = max(users, key=lambda x: x.get('totalpoint', 0), default=None)
         top_user_name = top_user['username'] if top_user else 'Không có'
 
-        # Top 10 users
         top_users = sorted(users, key=lambda x: x.get('totalpoint', 0), reverse=True)[:10]
 
         return jsonify({
@@ -54,7 +49,6 @@ def admin_get_stats():
 @admin_bp.route('/api/admin/update-user', methods=['POST'])
 @api_admin_required
 def admin_update_user():
-    """API cập nhật thông tin user (chỉ admin)"""
     data = request.get_json()
     if not data:
         return jsonify({'success': False, 'error': 'Không có dữ liệu'}), 400
@@ -78,7 +72,6 @@ def admin_update_user():
 @admin_bp.route('/api/admin/delete-user', methods=['POST'])
 @api_admin_required
 def admin_delete_user():
-    """API xóa user (chỉ admin)"""
     data = request.get_json()
     if not data:
         return jsonify({'success': False, 'error': 'Không có dữ liệu'}), 400
@@ -103,7 +96,6 @@ def admin_delete_user():
 @admin_bp.route('/api/admin/change-password', methods=['POST'])
 @api_admin_required
 def admin_change_own_password():
-    """API đổi mật khẩu của chính admin"""
     data = request.get_json()
     if not data:
         return jsonify({'success': False, 'error': 'Không có dữ liệu'}), 400
@@ -114,11 +106,9 @@ def admin_change_own_password():
     if not current_password or not new_password:
         return jsonify({'success': False, 'error': 'Vui lòng điền đầy đủ thông tin'}), 400
 
-    # Verify current password
     if not db.login_user(session['username'], current_password):
         return jsonify({'success': False, 'error': 'Mật khẩu hiện tại không đúng'}), 400
 
-    # Update password
     if db.update_user_password(session['username'], new_password):
         return jsonify({'success': True, 'message': 'Đổi mật khẩu thành công'})
     else:
@@ -127,7 +117,6 @@ def admin_change_own_password():
 @admin_bp.route('/api/admin/change-user-password', methods=['POST'])
 @api_admin_required
 def admin_change_user_password():
-    """API đổi mật khẩu của user khác (chỉ admin)"""
     data = request.get_json()
     if not data:
         return jsonify({'success': False, 'error': 'Không có dữ liệu'}), 400
@@ -138,7 +127,6 @@ def admin_change_user_password():
     if not username or not new_password:
         return jsonify({'success': False, 'error': 'Vui lòng điền đầy đủ thông tin'}), 400
 
-    # Update password
     if db.update_user_password(username, new_password):
         return jsonify({'success': True, 'message': f'Đổi mật khẩu cho {username} thành công'})
     else:
