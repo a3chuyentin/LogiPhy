@@ -498,10 +498,131 @@ class QuestionManager {
         this.appendContinueButton(container);
     }
 
+    static showExplanationResult(explain) {
+        const container = DomUtils.getElement('answer-result-container') || DomUtils.getElement('hiddenSection');
+        const oldResult = document.getElementById('answer-result');
+        if(oldResult) oldResult.remove();
+
+        const resultDiv = document.createElement('div');
+        resultDiv.id = 'answer-result';
+        resultDiv.className = 'result explanation';
+        resultDiv.style.animation = 'slideUp 0.3s ease';
+        
+        // Xử lý explain để hiển thị từng bước với xuống dòng
+        let formattedExplain = explain;
+        
+        // Kiểm tra nếu explain có dạng JSON array hoặc có cấu trúc bước
+        try {
+            // Thử parse JSON
+            const parsed = JSON.parse(explain);
+            if (Array.isArray(parsed)) {
+                formattedExplain = parsed.map((item, idx) => {
+                    return `<div class="step-item">
+                                <div class="step-header">📌 Bước ${idx + 1}</div>
+                                <div class="step-detail">${item}</div>
+                            </div>`;
+                }).join('');
+            }
+        } catch(e) {
+            // Không phải JSON, xử lý text thường
+            if (explain && (explain.includes('Bước') || explain.includes('bước'))) {
+                // Tách thành các bước dựa trên pattern "Bước X:"
+                const steps = explain.split(/(?=Bước\s+\d+:)|(?=bước\s+\d+:)/);
+                if (steps.length > 1) {
+                    let stepsHTML = '';
+                    steps.forEach((step, index) => {
+                        if (step.trim()) {
+                            const stepMatch = step.match(/(Bước|bước)\s+(\d+):/);
+                            const stepNumber = stepMatch ? stepMatch[2] : (index + 1);
+                            const stepContent = step.replace(/(Bước|bước)\s+\d+:/, '').trim();
+                            stepsHTML += `
+                                <div class="step-item">
+                                    <div class="step-header">📌 Bước ${stepNumber}</div>
+                                    <div class="step-detail">${stepContent}</div>
+                                </div>
+                            `;
+                        }
+                    });
+                    if (stepsHTML) formattedExplain = stepsHTML;
+                }
+            }
+        }
+        
+        resultDiv.innerHTML = `
+            <h3>📖 Giải thích chi tiết</h3>
+            <div class="explanation-content">
+                ${formattedExplain}
+            </div>
+        `;
+        
+        // Thêm CSS cho giải thích từng bước
+        if (!document.querySelector('#explanation-step-style')) {
+            const style = document.createElement('style');
+            style.id = 'explanation-step-style';
+            style.textContent = `
+                .explanation-content {
+                    max-height: 500px;
+                    overflow-y: auto;
+                    padding: 0.5rem;
+                }
+                .step-item {
+                    margin-bottom: 1rem;
+                    padding: 0.75rem;
+                    border-left: 3px solid #4284DB;
+                    background: rgba(255,255,255,0.05);
+                    border-radius: 0 8px 8px 0;
+                    transition: all 0.3s ease;
+                }
+                .step-item:hover {
+                    background: rgba(255,255,255,0.1);
+                    transform: translateX(5px);
+                }
+                .step-header {
+                    font-weight: bold;
+                    color: #ffd700;
+                    margin-bottom: 0.5rem;
+                    font-size: 1rem;
+                }
+                .step-detail {
+                    line-height: 1.6;
+                    color: rgba(255,255,255,0.9);
+                    word-wrap: break-word;
+                }
+                #answer-result {
+                    margin-top: 1rem;
+                    background: linear-gradient(135deg, rgba(66, 132, 219, 0.2), rgba(41, 234, 196, 0.2));
+                    border-radius: 12px;
+                    padding: 1rem;
+                    backdrop-filter: blur(10px);
+                }
+                #answer-result h3 {
+                    color: white;
+                    margin-bottom: 1rem;
+                    font-size: 1.2rem;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        if(DomUtils.getElement('answer-result-container')) {
+            DomUtils.getElement('answer-result-container').appendChild(resultDiv);
+        } else {
+            container.appendChild(resultDiv);
+        }
+
+        setTimeout(() => {
+            this.renderMathAggressive([resultDiv]);
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
+        
+        this.appendContinueButton(resultDiv);
+    }
+
     static async submitAnswer() {
         const userAnswer = DomUtils.getValue(DomUtils.getElement('user-answer'));
         const submitBtn = document.querySelector('.submit-answer-btn') || document.querySelector('button[onclick="submitAnswer()"]');
         const answerContainer = DomUtils.getElement('answer-input-container') || document.querySelector('.answer-input-section');
+        const stepContainer = document.querySelector('.steps-container');
         
         const lop = DomUtils.getValue(DomUtils.getElement('lop'));
         const question = DomUtils.getValue(DomUtils.getElement('question'));
@@ -515,10 +636,15 @@ class QuestionManager {
         if (answerContainer) {
             answerContainer.style.display = 'none';
         }
+
         if (submitBtn) {
             submitBtn.style.display = 'none';
         }
         
+        if (stepContainer) {
+            stepContainer.style.display = 'none';
+        }
+
         const finalAnswerLink = DomUtils.getElement('final-answer-link');
         if (finalAnswerLink) {
             finalAnswerLink.style.display = 'none';
@@ -545,7 +671,7 @@ class QuestionManager {
             practiceState.pendingExplain = explain;
             
             showResultPopup(isCorrect, explain, () => {
-                this.showExplanationResult(explain);
+                QuestionManager.showExplanationResult.call(QuestionManager, explain);
             });
             
             if(submitBtn) submitBtn.disabled = false;
@@ -556,33 +682,26 @@ class QuestionManager {
         }
     }
 
-    static showExplanationResult(explain) {
-        const container = DomUtils.getElement('answer-result-container') || DomUtils.getElement('hiddenSection');
-        const oldResult = document.getElementById('answer-result');
-        if(oldResult) oldResult.remove();
-
-        const resultDiv = document.createElement('div');
-        resultDiv.id = 'answer-result';
-        resultDiv.className = 'result explanation';
-        resultDiv.style.animation = 'slideUp 0.3s ease';
+    static handleFinalAnswerClick = () => {
+        const content = DomUtils.getElement('final-answer-content');
+        const link = DomUtils.getElement('final-answer-link');
         
-        resultDiv.innerHTML = `
-            <h3>📖 Giải thích chi tiết</h3>
-            <p><strong>Lời giải:</strong> ${explain}</p>
-        `;
+        DomUtils.toggleVisibility(content, true);
+        DomUtils.toggleVisibility(link, false);
         
-        if(DomUtils.getElement('answer-result-container')) {
-            DomUtils.getElement('answer-result-container').appendChild(resultDiv);
-        } else {
-            container.appendChild(resultDiv);
+        let answerContent = content.innerHTML;
+        if (answerContent && !answerContent.includes('<br>')) {
+            answerContent = answerContent
+                .replace(/(Bước\s+\d+:)/g, '<br><strong>$1</strong>')
+                .replace(/^<br>/, '');
+            content.innerHTML = answerContent;
         }
-
-        setTimeout(() => {
-            this.renderMathAggressive([resultDiv]);
-            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 50);
         
-        this.appendContinueButton(resultDiv);
+        this.renderMathAggressive([content]);
+        if(practiceState.sessionId) SessionManager.zeroOutPoints();
+
+        const container = document.querySelector('.answer-section');
+        this.appendContinueButton(container);
     }
 
     static renderMathAggressive(elements) {
