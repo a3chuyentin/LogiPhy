@@ -81,7 +81,7 @@ class GeminiService:
             return None
     
     def _clean_json_response(self, text: str) -> str:
-        """Clean JSON response from markdown and extra text"""
+        """Clean JSON response from markdown, duplicate braces, and extra text"""
         cleaned = text.strip()
         
         # Remove markdown code blocks
@@ -92,6 +92,40 @@ class GeminiService:
             
         if cleaned.endswith('```'):
             cleaned = cleaned[:-3]
+        
+        cleaned = cleaned.strip()
+        
+        # Xử lý duplicate braces {{ ... }}
+        import re
+        
+        # Chiến lược 1: Thay thế tất cả {{ thành { và }} thành }
+        # Nhưng cẩn thận với JSON hợp lệ có thể có {{ trong string
+        # Vì đây là JSON, không có {{ trong string value nên an toàn
+        cleaned = re.sub(r'\{\{', '{', cleaned)
+        cleaned = re.sub(r'\}\}', '}', cleaned)
+        
+        # Chiến lược 2: Nếu vẫn còn vấn đề, thử tìm JSON pattern
+        # Tìm phần bắt đầu bằng { và kết thúc bằng } ở ngoài cùng
+        brace_count = 0
+        start_idx = -1
+        
+        for i, char in enumerate(cleaned):
+            if char == '{':
+                if brace_count == 0:
+                    start_idx = i
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+                if brace_count == 0 and start_idx != -1:
+                    # Tìm thấy JSON hợp lệ
+                    cleaned = cleaned[start_idx:i+1]
+                    break
+        
+        # Đảm bảo JSON không bị thừa dấu phẩy cuối
+        cleaned = re.sub(r',\s*}', '}', cleaned)
+        cleaned = re.sub(r',\s*]', ']', cleaned)
+        
+        logger.debug(f"Cleaned JSON (first 500 chars): {cleaned[:500]}")
         
         return cleaned.strip()
     
