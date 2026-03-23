@@ -198,7 +198,6 @@ class HomePage {
         }
 
         if (!currentUsername) {
-            console.warn("Không tìm thấy username để hiển thị rank");
             return;
         }
 
@@ -355,31 +354,32 @@ class HomePage {
 
     showPopup(message, type = 'success') {
         const modal = document.getElementById('notification-modal');
+        if (!modal) {
+            alert(message);
+            return;
+        }
+        
         const modalIcon = modal.querySelector('.modal-icon');
         const modalMessage = modal.querySelector('.modal-message');
         
-        if (modal && modalIcon && modalMessage) {
+        if (modalIcon && modalMessage) {
             modalIcon.textContent = type === 'success' ? '✅' : '❌';
             modalMessage.textContent = message;
             
+            modal.classList.remove('error', 'show');
+            modal.offsetHeight;
+            
             if (type === 'error') {
                 modal.classList.add('error');
-                modalIcon.style.animation = 'shakeIcon 0.6s ease';
-            } else {
-                modal.classList.remove('error');
-                modalIcon.style.animation = 'bounceIcon 0.6s ease';
             }
             
-            modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.add('show'), 10);
+            modal.classList.add('show');
             
             setTimeout(() => {
                 modal.classList.remove('show');
-                setTimeout(() => {
-                    modal.classList.add('hidden');
-                    modalIcon.style.animation = '';
-                }, 300);
             }, 2500);
+        } else {
+            alert(message);
         }
     }
 
@@ -429,8 +429,6 @@ function switchTab(tabName) {
     if (window.homePage && typeof window.homePage.switchTab === 'function') {
         window.homePage.switchTab(tabName);
     } else {
-        console.log('HomePage chưa sẵn sàng, sử dụng fallback tab switching');
-        
         document.querySelectorAll('.tab-pane').forEach(pane => {
             pane.classList.add('hidden');
             pane.classList.remove('active');

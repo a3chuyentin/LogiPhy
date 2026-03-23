@@ -8,6 +8,54 @@ class MathLearning {
         this.setupEventListeners();
     }
 
+    showPopup(message, type = 'error') {
+        let popup = document.getElementById('learn-popup');
+        if (!popup) {
+            popup = document.createElement('div');
+            popup.id = 'learn-popup';
+            popup.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) scale(0.7);
+                background: linear-gradient(135deg, rgba(66, 132, 219, 0.98) 0%, rgba(41, 234, 196, 0.98) 100%);
+                border: 2px solid ${type === 'success' ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)'};
+                backdrop-filter: blur(20px);
+                border-radius: 1.5rem;
+                padding: 2rem 2.5rem;
+                box-shadow: 0 0 80px rgba(240, 228, 145, 0.4);
+                z-index: 10000;
+                opacity: 0;
+                transition: all 0.3s ease;
+                pointer-events: none;
+                min-width: 300px;
+                text-align: center;
+            `;
+            popup.innerHTML = `
+                <div style="font-size: 3rem; margin-bottom: 0.75rem;">${type === 'success' ? '✅' : '❌'}</div>
+                <p style="color: white; font-size: 1.125rem; font-weight: 700; margin: 0;"></p>
+            `;
+            document.body.appendChild(popup);
+        }
+        
+        const icon = popup.querySelector('div:first-child');
+        const msg = popup.querySelector('p');
+        
+        icon.textContent = type === 'success' ? '✅' : '❌';
+        msg.textContent = message;
+        popup.style.borderColor = type === 'success' ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)';
+        
+        popup.style.opacity = '1';
+        popup.style.transform = 'translate(-50%, -50%) scale(1)';
+        popup.style.pointerEvents = 'auto';
+        
+        setTimeout(() => {
+            popup.style.opacity = '0';
+            popup.style.transform = 'translate(-50%, -50%) scale(0.7)';
+            popup.style.pointerEvents = 'none';
+        }, 2500);
+    }
+
     setupEventListeners() {
         const mathField = document.getElementById('question');
         if (mathField) {
@@ -18,29 +66,6 @@ class MathLearning {
                 }
             });
         }
-    }
-
-    showAlert(message, type = 'error') {
-        const alertDiv = document.createElement('div');
-        alertDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${type === 'error' ? '#f44336' : '#4CAF50'};
-            color: white;
-            padding: 16px 24px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 10000;
-            animation: slideInRight 0.3s ease;
-        `;
-        alertDiv.textContent = message;
-        document.body.appendChild(alertDiv);
-
-        setTimeout(() => {
-            alertDiv.style.animation = 'slideOutRight 0.3s ease';
-            setTimeout(() => alertDiv.remove(), 300);
-        }, 4000);
     }
 
     showLoading(message = 'Đang phân tích bài toán...') {
@@ -79,7 +104,7 @@ class MathLearning {
         const questionDiv = document.getElementById('question_div');
 
         if (!lop || !question.trim()) {
-            this.showAlert('Vui lòng nhập đầy đủ lớp và câu hỏi!');
+            this.showPopup('Vui lòng nhập đầy đủ lớp và câu hỏi!', 'error');
             return;
         }
 
@@ -109,7 +134,7 @@ class MathLearning {
             this.hideLoading();
 
             if (data.error) {
-                this.showAlert('Có lỗi xảy ra: ' + data.error);
+                this.showPopup('Có lỗi xảy ra: ' + data.error, 'error');
             } else {
                 questionDiv.classList.add('hidden');
                 hiddenSection.classList.remove('hidden');
@@ -118,7 +143,7 @@ class MathLearning {
         } catch (error) {
             console.error('Error:', error);
             this.hideLoading();
-            this.showAlert('Có lỗi kết nối xảy ra. Vui lòng thử lại!');
+            this.showPopup('Có lỗi kết nối xảy ra. Vui lòng thử lại!', 'error');
         } finally {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnText;

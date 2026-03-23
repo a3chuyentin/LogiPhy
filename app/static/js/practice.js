@@ -137,7 +137,51 @@ function showResultPopup(isCorrect, explain, onClose) {
 }
 
 function showAlert(message, type = 'error') {
-    alert(message);
+    let popup = document.getElementById('practice-popup');
+    if (!popup) {
+        popup = document.createElement('div');
+        popup.id = 'practice-popup';
+        popup.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.7);
+            background: linear-gradient(135deg, rgba(66, 132, 219, 0.98) 0%, rgba(41, 234, 196, 0.98) 100%);
+            border: 2px solid ${type === 'success' ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)'};
+            backdrop-filter: blur(20px);
+            border-radius: 1.5rem;
+            padding: 2rem 2.5rem;
+            box-shadow: 0 0 80px rgba(240, 228, 145, 0.4);
+            z-index: 10000;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            min-width: 300px;
+            text-align: center;
+        `;
+        popup.innerHTML = `
+            <div style="font-size: 3rem; margin-bottom: 0.75rem;">${type === 'success' ? '✅' : '❌'}</div>
+            <p style="color: white; font-size: 1.125rem; font-weight: 700; margin: 0;"></p>
+        `;
+        document.body.appendChild(popup);
+    }
+    
+    const icon = popup.querySelector('div:first-child');
+    const msg = popup.querySelector('p');
+    
+    icon.textContent = type === 'success' ? '✅' : '❌';
+    msg.textContent = message;
+    popup.style.borderColor = type === 'success' ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)';
+    
+    popup.style.opacity = '1';
+    popup.style.transform = 'translate(-50%, -50%) scale(1)';
+    popup.style.pointerEvents = 'auto';
+    
+    setTimeout(() => {
+        popup.style.opacity = '0';
+        popup.style.transform = 'translate(-50%, -50%) scale(0.7)';
+        popup.style.pointerEvents = 'none';
+    }, 2500);
 }
 
 class ApiService {
@@ -427,6 +471,7 @@ class QuestionManager {
     static async submitAnswer() {
         const userAnswer = DomUtils.getValue(DomUtils.getElement('user-answer'));
         const submitBtn = document.querySelector('.submit-answer-btn') || document.querySelector('button[onclick="submitAnswer()"]');
+        const answerContainer = DomUtils.getElement('answer-input-container') || document.querySelector('.answer-input-section');
         
         const lop = DomUtils.getValue(DomUtils.getElement('lop'));
         const question = DomUtils.getValue(DomUtils.getElement('question'));
@@ -436,6 +481,17 @@ class QuestionManager {
 
         if(submitBtn) submitBtn.disabled = true;
         showLoading('Đang kiểm tra câu trả lời...');
+
+        if (answerContainer) {
+            answerContainer.style.display = 'none';
+        }
+        if (submitBtn) {
+            submitBtn.style.display = 'none';
+        }
+        
+        if (finalAnswerLink) {
+            finalAnswerLink.style.display = 'none';
+        }
 
         try {
             const result = await ApiService.request(API_CONFIG.endpoints.processAnswer, {
@@ -456,6 +512,8 @@ class QuestionManager {
             }
             
             practiceState.pendingExplain = explain;
+            
+            const finalAnswerLink = DomUtils.getElement('final-answer-link');
             
             showResultPopup(isCorrect, explain, () => {
                 this.showExplanationResult(explain);

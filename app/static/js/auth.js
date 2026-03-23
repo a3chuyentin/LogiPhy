@@ -5,6 +5,54 @@ class AuthHandler {
 
     init() {}
 
+    showPopup(message, type = 'error') {
+        let popup = document.getElementById('auth-popup');
+        if (!popup) {
+            popup = document.createElement('div');
+            popup.id = 'auth-popup';
+            popup.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) scale(0.7);
+                background: linear-gradient(135deg, rgba(66, 132, 219, 0.98) 0%, rgba(41, 234, 196, 0.98) 100%);
+                border: 2px solid ${type === 'success' ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)'};
+                backdrop-filter: blur(20px);
+                border-radius: 1.5rem;
+                padding: 2rem 2.5rem;
+                box-shadow: 0 0 80px rgba(240, 228, 145, 0.4);
+                z-index: 10000;
+                opacity: 0;
+                transition: all 0.3s ease;
+                pointer-events: none;
+                min-width: 300px;
+                text-align: center;
+            `;
+            popup.innerHTML = `
+                <div style="font-size: 3rem; margin-bottom: 0.75rem;">${type === 'success' ? '✅' : '❌'}</div>
+                <p style="color: white; font-size: 1.125rem; font-weight: 700; margin: 0;"></p>
+            `;
+            document.body.appendChild(popup);
+        }
+        
+        const icon = popup.querySelector('div:first-child');
+        const msg = popup.querySelector('p');
+        
+        icon.textContent = type === 'success' ? '✅' : '❌';
+        msg.textContent = message;
+        popup.style.borderColor = type === 'success' ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)';
+        
+        popup.style.opacity = '1';
+        popup.style.transform = 'translate(-50%, -50%) scale(1)';
+        popup.style.pointerEvents = 'auto';
+        
+        setTimeout(() => {
+            popup.style.opacity = '0';
+            popup.style.transform = 'translate(-50%, -50%) scale(0.7)';
+            popup.style.pointerEvents = 'none';
+        }, 2500);
+    }
+
     async handleLogin(event) {
         event.preventDefault();
 
@@ -14,21 +62,23 @@ class AuthHandler {
         try {
             const response = await fetch('/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({ username, password })
             });
             
             const data = await response.json();
             
             if (data.success) {
-                this.showMessage(data.message, 'success');
-                this.navigateToHome();
+                this.showPopup(data.message, 'success');
+                setTimeout(() => this.navigateToHome(), 1500);
             } else {
-                this.showMessage(data.message, 'error');
+                this.showPopup(data.message, 'error');
             }
         } catch (error) {
             console.error('Error:', error);
-            this.showMessage('Có lỗi xảy ra khi đăng nhập!', 'error');
+            this.showPopup('Có lỗi xảy ra khi đăng nhập!', 'error');
         }
     }
 
@@ -39,33 +89,35 @@ class AuthHandler {
         const confirmPassword = document.getElementById('register-confirm-password').value;
         
         if (password !== confirmPassword) {
-            this.showMessage('Mật khẩu xác nhận không khớp!', 'error');
+            this.showPopup('Mật khẩu xác nhận không khớp!', 'error');
             return;
         }
         
         if (password.length < 8) {
-            this.showMessage('Mật khẩu phải có ít nhất 8 ký tự!', 'error');
+            this.showPopup('Mật khẩu phải có ít nhất 8 ký tự!', 'error');
             return;
         }
         
         try {
             const response = await fetch('/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({ username, password })
             });
             
             const data = await response.json();
             
             if (data.success) {
-                this.showMessage(data.message, 'success');
-                this.navigateToLogin();
+                this.showPopup(data.message, 'success');
+                setTimeout(() => this.navigateToLogin(), 1500);
             } else {
-                this.showMessage(data.message, 'error');
+                this.showPopup(data.message, 'error');
             }
         } catch (error) {
             console.error('Error:', error);
-            this.showMessage('Có lỗi xảy ra khi đăng ký!', 'error');
+            this.showPopup('Có lỗi xảy ra khi đăng ký!', 'error');
         }
     }
 
@@ -80,10 +132,6 @@ class AuthHandler {
             input.type = 'password';
             button.textContent = '👁️';
         }
-    }
-
-    showMessage(message, type = 'info') {
-        alert(message);
     }
 
     navigateToHome() {
