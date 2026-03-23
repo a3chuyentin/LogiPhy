@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block linkcss %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+{% endblock %}
+{% block content %}
+<!-- Background Animation -->
+<div class="bg-animation"></div>
+
+<div class="home-container">
+    <div class="home-card">
+        <!-- User Header -->
+        <div class="user-header">
+            <h1>Chào, <span class="username-text">{{ username }}</span>! 👋</h1>
+            <p class="tagline">Tiếp tục hành trình học tập của bạn</p>
+            {% if username == 'admin' %}
+            <button class="admin-btn" onclick="navigateToAdmin()">
+                <span>⚙️</span> Trang quản trị
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- User Stats -->
+        <div class="user-stats">
+            <div class="stat-item">
+                <span class="stat-label">⭐ Điểm tích lũy</span>
+                <span class="stat-value" id="total-points">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">🔥 Điểm hiện tại</span>
+                <span class="stat-value" id="current-points">0</span>
+            </div>
+        </div>
+
+        <!-- Selected Item Display -->
+        <div id="selected-item-display" class="selected-item-box"></div>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs-nav">
+            <button class="tab-btn" onclick="switchTab('learning')">
+                <span>📚</span> Học tập
+            </button>
+            <button class="tab-btn" onclick="switchTab('inventory')">
+                <span>👑</span> Danh hiệu
+            </button>
+            <button class="tab-btn" onclick="switchTab('shop')">
+                <span>🛍️</span> Cửa hàng
+            </button>
+            <button class="tab-btn" onclick="switchTab('ranking')">
+                <span>🏆</span> Xếp hạng
+            </button>
+            <button class="tab-btn" onclick="switchTab('settings')">
+                <span>⚙️</span> Cài đặt
+            </button>
+        </div>
+
+        <!-- Tab Panes -->
+        <div id="learning" class="tab-pane">
+            <div class="learning-grid">
+                <div class="mode-button study-btn" onclick="navigateToStudy()">
+                    <span class="mode-icon">📖</span>
+                    <h3>Chế độ học tập</h3>
+                    <p>Học chi tiết từng bước với AI</p>
+                    <span class="cta">Bắt đầu →</span>
+                </div>
+                <div class="mode-button practice-btn" onclick="navigateToPractice()">
+                    <span class="mode-icon">🎮</span>
+                    <h3>Chế độ luyện tập</h3>
+                    <p>Tích lũy điểm & so sánh xếp hạng</p>
+                    <span class="cta">Bắt đầu →</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="inventory" class="tab-pane hidden">
+            <div class="section-header">
+                <h3>👑 Kho danh hiệu</h3>
+                <span id="inv-count" class="count-badge">0 danh hiệu</span>
+            </div>
+            <div class="scrollable-wrapper">
+                <div id="inventory-grid" class="items-grid"></div>
+                <div id="empty-inventory" class="empty-state hidden">
+                    <p>📭 Bạn chưa có danh hiệu nào</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="shop" class="tab-pane hidden">
+            <div class="section-header">
+                <h3>🛍️ Cửa hàng danh hiệu</h3>
+                <span class="user-balance">💰 <span id="shop-points">0</span> điểm</span>
+            </div>
+            <div class="scrollable-wrapper">
+                <div id="items-grid" class="items-grid"></div>
+            </div>
+        </div>
+
+        <div id="ranking" class="tab-pane hidden">
+            <div class="section-header">
+                <h3>🏆 Bảng xếp hạng toàn cộng đồng</h3>
+            </div>
+            
+            <!-- User Rank Display -->
+            <div id="user-rank-box" class="user-rank-display">
+                <!-- User rank will be populated by JavaScript -->
+            </div>
+            
+            <div class="scrollable-wrapper ranking-scroll">
+                <div id="rankList" class="rank-list"></div>
+            </div>
+        </div>
+
+        <div id="settings" class="tab-pane hidden">
+            <div class="section-header">
+                <h3>⚙️ Cài đặt tài khoản</h3>
+            </div>
+            <div class="scrollable-wrapper">
+                <div class="setting-field">
+                    <label for="NewPassword">Mật khẩu mới</label>
+                    <input type="password" name="Newpassword" id="NewPassword" placeholder="Nhập mật khẩu mới">
+                </div>
+                <div class="setting-field">
+                    <label for="RepeatPassword">Nhập lại mật khẩu mới</label>
+                    <input type="password" name="repeatPassword" id="RepeatPassword" placeholder="Nhập lại mật khẩu mới">
+                </div>
+                <div class="setting-field">
+                    <label for="CurrentPassword">Mật khẩu hiện tại</label>
+                    <input type="password" name="CurrentPassword" id="CurrentPassword" placeholder="Nhập mật khẩu hiện tại">
+                </div>
+                <button class="modal-btn-confirm" onclick="SubmitAccountChanges()">
+                    ✅ Lưu thay đổi
+                </button>
+                
+                <hr>
+                
+                <button class="logout-btn" onclick="logout()">
+                    🚪 Đăng xuất khỏi tài khoản
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Modal -->
+<div id="notification-modal" class="notification-modal">
+    <div class="modal-content">
+        <span class="modal-icon">✅</span>
+        <p class="modal-message"></p>
+    </div>
+</div>
+
+<!-- Confirm Modal -->
+<div id="confirm-modal" class="confirm-modal">
+    <div class="modal-overlay" onclick="closeConfirmModal()"></div>
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <span class="modal-title-icon">🛍️</span>
+            <h3 class="modal-title">Xác nhận mua danh hiệu</h3>
+            <button class="modal-close" onclick="closeConfirmModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-item-name"></p>
+            <p class="modal-item-price"></p>
+            <p class="modal-question">Bạn có chắc muốn mua danh hiệu này?</p>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn-cancel" onclick="closeConfirmModal()">Hủy</button>
+            <button class="modal-btn-confirm" onclick="confirmPurchase()">Xác nhận</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    switchTab('learning');
+});
+</script>
+{% endblock %}
+{% block linkjs %}
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+{% endblock %}

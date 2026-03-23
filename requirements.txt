@@ -1,4 +1,5 @@
-Flask
-psycopg[binary]
-python-dotenv
-Flask-Migrate
+google-genai
+flask
+dotenv
+mistune
+flask-cors

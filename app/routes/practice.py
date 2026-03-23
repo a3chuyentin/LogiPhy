@@ -1,0 +1,177 @@
+from flask import Blueprint, request, jsonify, session, render_template
+import time
+import logging
+from app.models.database import Database
+from app.services.gemini_service import gemini_service
+from app.utils.helpers import read_prompt_file, create_prompt_content, validate_question_response
+from app.utils.decorators import login_required
+from app.config import Config
+
+practice_bp = Blueprint('practice', __name__)
+db = Database()
+logger = logging.getLogger(__name__)
+
+@practice_bp.route('/practice')
+@login_required
+def practice_page():
+    return render_template('practice.html', username=session.get('username'))
+
+@practice_bp.route('/process-question', methods=['POST'])
+@login_required
+def process_question():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Không có dữ liệu'}), 400
+
+    lop = data.get('lop', '').strip()
+    question_data = data.get('question', '').strip()
+
+    if not question_data:
+        return jsonify({'error': 'Vui lòng nhập câu hỏi'}), 400
+
+    prompt_template = read_prompt_file(Config.QUESTION_PROMPT_FILE)
+    if not prompt_template:
+        return jsonify({'error': 'Không thể đọc file prompt'}), 500
+
+    content = create_prompt_content(lop, question_data, prompt_template)
+    logger.info(f"Sending to Gemini: {content}")
+
+    try:
+        questions_json = gemini_service.generate_question(content)
+        logger.info(f"Gemini response: {questions_json}")
+
+        if not questions_json:
+            return jsonify({
+                'loigiai': [{'buoc': '1', 'chitiet': 'Lỗi: Không có phản hồi từ AI'}],
+                'dapan': 'Lỗi hệ thống'
+            })
+
+        # Get first item if list
+        result = questions_json[0] if isinstance(questions_json, list) else questions_json
+        
+        # Validate and fix structure
+        final_result = validate_question_response(result)
+        logger.info(f"Final processed result: {final_result}")
+        
+        return jsonify(final_result)
+
+    except Exception as e:
+        logger.error(f"Error in process_question: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        
+        return jsonify({
+            'loigiai': [{'buoc': '1', 'chitiet': f'Lỗi hệ thống: {str(e)}'}],
+            'dapan': 'Lỗi xử lý'
+        }), 500
+
+@practice_bp.route('/process-answer', methods=['POST'])
+@login_required
+def process_answer():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Không có dữ liệu'}), 400
+
+    lop = data.get('lop', '').strip()
+    question = data.get('question', '').strip()
+    user_answer = data.get('user_answer', '').strip()
+    question_id = data.get('id', '').strip()
+
+    if not question or not user_answer:
+        return jsonify({'error': 'Thiếu thông tin câu hỏi hoặc câu trả lời'}), 400
+
+    prompt_template = read_prompt_file(Config.COMPARE_PROMPT_FILE)
+    if not prompt_template:
+        return jsonify({'error': 'Không thể đọc file prompt'}), 500
+
+    prompt = f"Lớp: {lop}\nCâu hỏi: {question}\nCâu trả lời của học sinh: {user_answer}\n\n{prompt_template}"
+
+    try:
+        compare_result = gemini_service.generate_question(prompt)
+        logger.info(f"Comparison result for question: {question}")
+        
+        try:
+            if compare_result and isinstance(compare_result, list) and len(compare_result) > 0:
+                json_data = compare_result[0]
+                if json_data.get('acstatus', "false") == "true":
+                    # Add points
+                    if f"score_{question_id}" in session:
+                        earned_point = session[f"score_{question_id}"]
+                        user_data = db.get_user_data(session['username'])
+                        if user_data is not None:
+                            total_point = user_data.get('totalpoint', 0) + earned_point
+                            current_point = user_data.get('currentpoint', 0) + earned_point
+                            db.update_points(session['username'], total_point, current_point)
+                            logger.info(f"Updated points: {total_point}/{current_point}")
+        except Exception as e:
+            logger.error(f"Error updating points: {e}")
+            logger.info("Sai câu trả lời.")
+
+        session[f"score_{question_id}"] = 0
+        return jsonify(compare_result)
+        
+    except Exception as e:
+        logger.error(f"Error processing answer: {str(e)}")
+        return jsonify({'error': 'Có lỗi xảy ra khi xử lý câu trả lời'}), 500
+
+@practice_bp.route('/api/new_session_id', methods=['POST'])
+@login_required
+def new_session_id():
+    """Create new session ID for practice problem"""
+    logger.info(f"new_session_id endpoint called by user: {session.get('username')}")
+
+    epoch_time = int(time.time())
+    session_key = f"score_{epoch_time}"
+
+    if session_key in session:
+        logger.warning(f"new_session_id: Session already exists: {session_key}")
+        return jsonify({'success': False, 'grade': 0, 'comment': 'Already exists', 'id': ''}), 409
+
+    session[session_key] = 100
+    logger.info(f"new_session_id: Created new session: {session_key} for user: {session['username']}")
+
+    return jsonify({
+        'success': True,
+        'grade': 100,
+        'comment': '',
+        'id': str(epoch_time)
+    }), 200
+
+@practice_bp.route('/api/update_temporary_score', methods=['POST'])
+@login_required
+def update_temporary_score():
+    data = request.get_json()
+    change_in_score = data.get('change', '0').strip()
+    session_id = data.get('id', '').strip()
+    
+    if f"score_{session_id}" not in session:
+        return jsonify({'success': False, 'grade': 0, 'comment': 'Not existed', 'id': ''}), 404
+
+    new_score = int(session[f"score_{session_id}"]) + int(change_in_score)
+    if new_score < 0:
+        new_score = 0
+    session[f"score_{session_id}"] = new_score
+    
+    return jsonify({
+        'success': True,
+        'grade': session[f"score_{session_id}"],
+        'comment': '',
+        'id': session_id
+    }), 200
+
+@practice_bp.route('/api/zero_out_temporary_score', methods=['POST'])
+@login_required
+def zero_out_temporary_score():
+    data = request.get_json()
+    session_id = data.get('id', '').strip()
+    
+    if f"score_{session_id}" not in session:
+        return jsonify({'success': False, 'grade': 0, 'comment': 'Not existed', 'id': ''}), 404
+        
+    session[f"score_{session_id}"] = 0
+    return jsonify({
+        'success': True,
+        'grade': session[f"score_{session_id}"],
+        'comment': '',
+        'id': session_id
+    }), 200
