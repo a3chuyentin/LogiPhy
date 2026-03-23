@@ -20,25 +20,20 @@ class GeminiService:
         if self._initialized:
             return
             
-        # Validate config
         Config.validate()
         
-        # Lấy config từ .env
         self.api_key = Config.GEMINI_API_KEY
         self.model = Config.GEMINI_MODEL
         self.temperature = Config.GEMINI_TEMPERATURE
         self.max_tokens = Config.GEMINI_MAX_TOKENS
         
-        # Khởi tạo client với API key
         self.client = genai.Client(api_key=self.api_key)
         self._initialized = True
         
         logger.info(f"GeminiService initialized with model: {self.model}")
     
     def generate_content(self, prompt: str, **kwargs) -> Optional[str]:
-        """Generate content using Gemini with config from .env"""
         try:
-            # Merge kwargs with default config
             temperature = kwargs.get('temperature', self.temperature)
             max_tokens = kwargs.get('max_tokens', self.max_tokens)
             
@@ -56,16 +51,13 @@ class GeminiService:
             return None
     
     def generate_question(self, prompt: str) -> Optional[List[Dict[str, Any]]]:
-        """Generate question and parse JSON response"""
         try:
             response_text = self.generate_content(prompt)
             if not response_text:
                 return None
             
-            # Clean and parse JSON
             cleaned_text = self._clean_json_response(response_text)
             
-            # Parse JSON
             try:
                 data = json.loads(cleaned_text)
                 return data if isinstance(data, list) else [data]
@@ -73,7 +65,6 @@ class GeminiService:
                 logger.error(f"Failed to parse JSON: {e}")
                 logger.error(f"Raw text: {cleaned_text}")
                 
-                # Try to find JSON in text (fallback)
                 return self._extract_json_from_text(cleaned_text)
                 
         except Exception as e:
@@ -81,10 +72,8 @@ class GeminiService:
             return None
     
     def _clean_json_response(self, text: str) -> str:
-        """Clean JSON response from markdown, duplicate braces, and extra text"""
         cleaned = text.strip()
         
-        # Remove markdown code blocks
         if cleaned.startswith('```json'):
             cleaned = cleaned[7:]
         elif cleaned.startswith('```'):
@@ -95,17 +84,11 @@ class GeminiService:
         
         cleaned = cleaned.strip()
         
-        # Xử lý duplicate braces {{ ... }}
         import re
         
-        # Chiến lược 1: Thay thế tất cả {{ thành { và }} thành }
-        # Nhưng cẩn thận với JSON hợp lệ có thể có {{ trong string
-        # Vì đây là JSON, không có {{ trong string value nên an toàn
         cleaned = re.sub(r'\{\{', '{', cleaned)
         cleaned = re.sub(r'\}\}', '}', cleaned)
         
-        # Chiến lược 2: Nếu vẫn còn vấn đề, thử tìm JSON pattern
-        # Tìm phần bắt đầu bằng { và kết thúc bằng } ở ngoài cùng
         brace_count = 0
         start_idx = -1
         
@@ -117,11 +100,9 @@ class GeminiService:
             elif char == '}':
                 brace_count -= 1
                 if brace_count == 0 and start_idx != -1:
-                    # Tìm thấy JSON hợp lệ
                     cleaned = cleaned[start_idx:i+1]
                     break
         
-        # Đảm bảo JSON không bị thừa dấu phẩy cuối
         cleaned = re.sub(r',\s*}', '}', cleaned)
         cleaned = re.sub(r',\s*]', ']', cleaned)
         
@@ -130,7 +111,6 @@ class GeminiService:
         return cleaned.strip()
     
     def _extract_json_from_text(self, text: str) -> Optional[List[Dict[str, Any]]]:
-        """Extract JSON from text using regex (fallback method)"""
         import re
         json_pattern = r'(\[.*\]|\{.*\})'
         matches = re.search(json_pattern, text, re.DOTALL)
@@ -144,7 +124,6 @@ class GeminiService:
         return None
     
     def generate_with_custom_config(self, prompt: str, temperature: float = None, max_tokens: int = None) -> Optional[str]:
-        """Generate content with custom configuration (override .env)"""
         try:
             temp = temperature if temperature is not None else self.temperature
             tokens = max_tokens if max_tokens is not None else self.max_tokens
@@ -162,5 +141,4 @@ class GeminiService:
             logger.error(f"Error generating content with custom config: {e}")
             return None
 
-# Singleton instance
 gemini_service = GeminiService()
