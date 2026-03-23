@@ -361,6 +361,7 @@ class HomePage {
         
         const modalIcon = modal.querySelector('.modal-icon');
         const modalMessage = modal.querySelector('.modal-message');
+        const modalContent = modal.querySelector('.modal-content') || modal;
         
         if (modalIcon && modalMessage) {
             modalIcon.textContent = type === 'success' ? '✅' : '❌';
@@ -375,8 +376,20 @@ class HomePage {
             
             modal.classList.add('show');
             
+            if (modalContent) {
+                modalContent.style.animation = 'popupZoomIn 0.3s ease forwards';
+            }
+            
             setTimeout(() => {
-                modal.classList.remove('show');
+                if (modalContent) {
+                    modalContent.style.animation = 'popupZoomOut 0.3s ease forwards';
+                }
+                setTimeout(() => {
+                    modal.classList.remove('show');
+                    if (modalContent) {
+                        modalContent.style.animation = '';
+                    }
+                }, 300);
             }, 2500);
         } else {
             alert(message);
@@ -462,9 +475,117 @@ function navigateToAdmin() {
 }
 
 function logout() {
-    if (confirm('Bạn có chắc muốn đăng xuất?')) {
-        window.location.href = '/logout';
+    showConfirmLogout();
+}
+
+function showConfirmLogout() {
+    if (!document.querySelector('#logout-popup-styles')) {
+        const styleSheet = document.createElement('style');
+        styleSheet.id = 'logout-popup-styles';
+        styleSheet.textContent = `
+            @keyframes popupZoomIn {
+                0% {
+                    opacity: 0;
+                    transform: scale(0.7);
+                }
+                50% {
+                    opacity: 0.8;
+                    transform: scale(1.05);
+                }
+                100% {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+            
+            @keyframes popupZoomOut {
+                0% {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+                100% {
+                    opacity: 0;
+                    transform: scale(0.7);
+                }
+            }
+        `;
+        document.head.appendChild(styleSheet);
     }
+
+    const modal = document.createElement('div');
+    modal.id = 'confirm-logout-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 20000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    `;
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+        background: linear-gradient(135deg, rgba(66, 132, 219, 0.98) 0%, rgba(41, 234, 196, 0.98) 100%);
+        border: 2px solid rgba(240, 228, 145, 0.6);
+        backdrop-filter: blur(20px);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        min-width: 320px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        transform: scale(0.7);
+        opacity: 0;
+    `;
+    
+    modalContent.innerHTML = `
+        <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+        <p style="color: white; font-size: 1.2rem; margin-bottom: 1.5rem; font-weight: 600;">Bạn có chắc muốn đăng xuất?</p>
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+            <button id="logout-confirm-yes" style="background: linear-gradient(135deg, #4caf50, #81c784); border: none; padding: 10px 24px; border-radius: 40px; color: white; font-weight: 600; cursor: pointer; font-size: 1rem;">Đăng xuất</button>
+            <button id="logout-confirm-no" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 10px 24px; border-radius: 40px; color: white; font-weight: 600; cursor: pointer; font-size: 1rem;">Hủy</button>
+        </div>
+    `;
+    
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    setTimeout(() => {
+        modal.style.opacity = '1';
+        modalContent.style.animation = 'popupZoomIn 0.3s ease forwards';
+    }, 10);
+    
+    const yesBtn = modalContent.querySelector('#logout-confirm-yes');
+    const noBtn = modalContent.querySelector('#logout-confirm-no');
+    
+    const closeModal = () => {
+        modalContent.style.animation = 'popupZoomOut 0.3s ease forwards';
+        setTimeout(() => {
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.remove();
+            }, 300);
+        }, 300);
+    };
+    
+    yesBtn.onclick = () => {
+        closeModal();
+        setTimeout(() => {
+            window.location.href = '/logout';
+        }, 300);
+    };
+    
+    noBtn.onclick = closeModal;
+    
+    modal.onclick = (e) => {
+        if (e.target === modal) closeModal();
+    };
 }
 
 function closeConfirmModal() {

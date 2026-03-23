@@ -33,11 +33,50 @@ class AdminPanel {
                 pointer-events: none;
                 min-width: 300px;
                 text-align: center;
+                animation: popupZoomIn 0.3s ease forwards;
             `;
             popup.innerHTML = `
                 <div style="font-size: 3rem; margin-bottom: 0.75rem;">${type === 'success' ? '✅' : '❌'}</div>
                 <p style="color: white; font-size: 1.125rem; font-weight: 700; margin: 0;"></p>
             `;
+            
+            if (!document.querySelector('#admin-popup-styles')) {
+                const styleSheet = document.createElement('style');
+                styleSheet.id = 'admin-popup-styles';
+                styleSheet.textContent = `
+                    @keyframes popupZoomIn {
+                        0% {
+                            opacity: 0;
+                            transform: translate(-50%, -50%) scale(0.7);
+                        }
+                        50% {
+                            opacity: 0.8;
+                            transform: translate(-50%, -50%) scale(1.05);
+                        }
+                        100% {
+                            opacity: 1;
+                            transform: translate(-50%, -50%) scale(1);
+                        }
+                    }
+                    
+                    @keyframes popupZoomOut {
+                        0% {
+                            opacity: 1;
+                            transform: translate(-50%, -50%) scale(1);
+                        }
+                        100% {
+                            opacity: 0;
+                            transform: translate(-50%, -50%) scale(0.7);
+                        }
+                    }
+                    
+                    .admin-popup-zoom-out {
+                        animation: popupZoomOut 0.3s ease forwards !important;
+                    }
+                `;
+                document.head.appendChild(styleSheet);
+            }
+            
             document.body.appendChild(popup);
         }
         
@@ -48,14 +87,19 @@ class AdminPanel {
         msg.textContent = message;
         popup.style.borderColor = type === 'success' ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)';
         
-        popup.style.opacity = '1';
-        popup.style.transform = 'translate(-50%, -50%) scale(1)';
+        if (popup.classList.contains('admin-popup-zoom-out')) {
+            popup.classList.remove('admin-popup-zoom-out');
+            popup.style.animation = 'popupZoomIn 0.3s ease forwards';
+        }
+        
         popup.style.pointerEvents = 'auto';
         
-        setTimeout(() => {
-            popup.style.opacity = '0';
-            popup.style.transform = 'translate(-50%, -50%) scale(0.7)';
-            popup.style.pointerEvents = 'none';
+        clearTimeout(popup.timeoutId);
+        popup.timeoutId = setTimeout(() => {
+            popup.classList.add('admin-popup-zoom-out');
+            setTimeout(() => {
+                popup.style.pointerEvents = 'none';
+            }, 300);
         }, 2500);
     }
 

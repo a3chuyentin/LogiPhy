@@ -1,6 +1,7 @@
 class MathLearning {
     constructor() {
         this.loadingElement = null;
+        this.resultPopupElement = null;
         this.init();
     }
 
@@ -54,6 +55,100 @@ class MathLearning {
             popup.style.transform = 'translate(-50%, -50%) scale(0.7)';
             popup.style.pointerEvents = 'none';
         }, 2500);
+    }
+
+    showResultPopup(isCorrect, explain, onClose) {
+        if (this.resultPopupElement) {
+            this.resultPopupElement.remove();
+            this.resultPopupElement = null;
+        }
+
+        this.resultPopupElement = document.createElement('div');
+        this.resultPopupElement.className = 'result-popup';
+        this.resultPopupElement.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: linear-gradient(135deg, rgba(66, 132, 219, 0.98) 0%, rgba(41, 234, 196, 0.98) 100%);
+            border: 2px solid ${isCorrect ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)'};
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 2rem;
+            min-width: 320px;
+            max-width: 400px;
+            text-align: center;
+            z-index: 10000;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 80px ${isCorrect ? 'rgba(76, 175, 80, 0.3)' : 'rgba(244, 67, 54, 0.3)'};
+            opacity: 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            animation: popupZoomIn 0.3s ease forwards;
+        `;
+        
+        const styleSheet = document.createElement("style");
+        styleSheet.textContent = `
+            @keyframes popupZoomIn {
+                0% {
+                    opacity: 0;
+                    transform: translate(-50%, -50%) scale(0.7);
+                }
+                50% {
+                    opacity: 0.8;
+                    transform: translate(-50%, -50%) scale(1.05);
+                }
+                100% {
+                    opacity: 1;
+                    transform: translate(-50%, -50%) scale(1);
+                }
+            }
+            
+            @keyframes popupZoomOut {
+                0% {
+                    opacity: 1;
+                    transform: translate(-50%, -50%) scale(1);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(-50%, -50%) scale(0.7);
+                }
+            }
+            
+            .result-popup-zoom-out {
+                animation: popupZoomOut 0.3s ease forwards !important;
+            }
+        `;
+        document.head.appendChild(styleSheet);
+        
+        this.resultPopupElement.innerHTML = `
+            <div style="font-size: 4rem; margin-bottom: 1rem;">${isCorrect ? '🎉' : '❌'}</div>
+            <h2 style="color: white; font-size: 1.8rem; margin-bottom: 0.5rem; font-weight: 800;">${isCorrect ? 'CHÍNH XÁC!' : 'CHƯA ĐÚNG'}</h2>
+            <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem; font-size: 0.9rem;">${isCorrect ? 'Bạn đã trả lời đúng!' : 'Hãy xem giải thích bên dưới'}</p>
+            <button id="close-result-popup" style="
+                background: linear-gradient(135deg, #4284DB, #29EAC4);
+                border: none;
+                padding: 10px 24px;
+                border-radius: 40px;
+                color: white;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                margin-top: 0.5rem;
+            ">Xem giải thích</button>
+        `;
+        
+        document.body.appendChild(this.resultPopupElement);
+        
+        const closeBtn = this.resultPopupElement.querySelector('#close-result-popup');
+        closeBtn.addEventListener('click', () => {
+            this.resultPopupElement.classList.add('result-popup-zoom-out');
+            
+            setTimeout(() => {
+                this.resultPopupElement.remove();
+                this.resultPopupElement = null;
+                if (onClose) onClose();
+            }, 300);
+        });
     }
 
     setupEventListeners() {
@@ -150,6 +245,127 @@ class MathLearning {
         }
     }
 
+    async submitAnswer() {
+        const userAnswer = document.getElementById('user-answer')?.value || '';
+        const submitBtn = document.querySelector('.submit-answer-btn') || document.querySelector('button[onclick="submitAnswer()"]');
+        const answerContainer = document.getElementById('answer-input-container') || document.querySelector('.answer-input-section');
+        const finalAnswerLink = document.getElementById('final-answer-link');
+        
+        const lop = document.getElementById('lop')?.value;
+        const questionField = document.getElementById('question');
+        const question = questionField?.getValue?.() || questionField?.value || '';
+
+        if (!userAnswer.trim()) {
+            this.showPopup('Vui lòng nhập câu trả lời!', 'error');
+            return;
+        }
+
+        if (submitBtn) submitBtn.disabled = true;
+        this.showLoading('Đang kiểm tra câu trả lời...');
+
+        if (answerContainer) {
+            answerContainer.style.display = 'none';
+        }
+        if (submitBtn) {
+            submitBtn.style.display = 'none';
+        }
+        if (finalAnswerLink) {
+            finalAnswerLink.style.display = 'none';
+        }
+
+        try {
+            const response = await fetch('/process-answer', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    lop: lop.trim(),
+                    question: question.trim(),
+                    user_answer: userAnswer.trim()
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            this.hideLoading();
+            
+            const data = Array.isArray(result) ? result[0] : result;
+            const isCorrect = data?.acstatus === 'true';
+            let explain = data?.explain || '';
+            
+            if (!explain || explain === 'null') {
+                explain = 'Không có giải thích chi tiết.';
+            } else {
+                explain = this.fixLaTeX(explain);
+                explain = this.normalizeContent(explain);
+            }
+            
+            this.showResultPopup(isCorrect, explain, () => {
+                this.showExplanationResult(explain);
+            });
+            
+            if (submitBtn) submitBtn.disabled = false;
+        } catch (error) {
+            console.error('Error:', error);
+            this.hideLoading();
+            this.showPopup('Có lỗi xảy ra khi kiểm tra đáp án!', 'error');
+            if (submitBtn) submitBtn.disabled = false;
+            
+            if (answerContainer) {
+                answerContainer.style.display = '';
+            }
+            if (submitBtn) {
+                submitBtn.style.display = '';
+            }
+            if (finalAnswerLink) {
+                finalAnswerLink.style.display = '';
+            }
+        }
+    }
+
+    showExplanationResult(explain) {
+        const container = document.getElementById('answer-result-container') || document.getElementById('hiddenSection');
+        const oldResult = document.getElementById('answer-result');
+        if (oldResult) oldResult.remove();
+
+        const resultDiv = document.createElement('div');
+        resultDiv.id = 'answer-result';
+        resultDiv.className = 'result explanation';
+        resultDiv.style.animation = 'slideUp 0.3s ease';
+        
+        resultDiv.innerHTML = `
+            <h3>📖 Giải thích chi tiết</h3>
+            <p><strong>Lời giải:</strong> ${explain}</p>
+        `;
+        
+        if (document.getElementById('answer-result-container')) {
+            document.getElementById('answer-result-container').appendChild(resultDiv);
+        } else {
+            container.appendChild(resultDiv);
+        }
+
+        setTimeout(() => {
+            this.renderMathAggressive([resultDiv]);
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
+        
+        const footerDiv = document.getElementById('action-footer');
+        if (footerDiv && !footerDiv.querySelector('.btn-continue')) {
+            const continueBtn = document.createElement('button');
+            continueBtn.className = 'btn-continue';
+            continueBtn.innerHTML = '🔄 Tiếp tục bài toán khác';
+            continueBtn.onclick = () => {
+                window.location.reload();
+            };
+            footerDiv.appendChild(continueBtn);
+        }
+    }
+
     fixLaTeX(text) {
         if (!text || typeof text !== 'string') return '';
         
@@ -239,7 +455,33 @@ class MathLearning {
             `;
         }
 
-        if (footerDiv) {
+        const answerInputHTML = `
+            <div id="answer-input-container" class="answer-input-section">
+                <h3>📝 Nhập câu trả lời của bạn:</h3>
+                <input type="text" id="user-answer" placeholder="Nhập đáp án tại đây..." style="width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;">
+                <button class="submit-answer-btn" style="background: linear-gradient(135deg, #4284DB, #29EAC4); color: white; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">Kiểm tra đáp án</button>
+            </div>
+            <div id="answer-result-container"></div>
+        `;
+        
+        solveDiv.insertAdjacentHTML('beforeend', answerInputHTML);
+        
+        const answerBtn = solveDiv.querySelector('.submit-answer-btn');
+        if (answerBtn) {
+            answerBtn.onclick = () => this.submitAnswer();
+        }
+        
+        const userAnswerInput = document.getElementById('user-answer');
+        if (userAnswerInput) {
+            userAnswerInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.submitAnswer();
+                }
+            });
+        }
+
+        if (footerDiv && !footerDiv.querySelector('.btn-continue')) {
             const continueBtn = document.createElement('button');
             continueBtn.className = 'btn-continue';
             continueBtn.innerHTML = '🔄 Tiếp tục bài toán khác';
@@ -303,7 +545,7 @@ class MathLearning {
                 });
             });
 
-            const stepContents = document.querySelectorAll('.step-content');
+            const stepContents = document.querySelectorAll('.step-content, .result, #final-answer-content, .answer-content');
             stepContents.forEach(content => {
                 content.style.whiteSpace = 'normal';
                 content.style.wordWrap = 'break-word';
@@ -327,6 +569,13 @@ function submitMathQuestion() {
     window.mathLearning.submitMathQuestion();
 }
 
+function submitAnswer() {
+    if (!window.mathLearning) {
+        window.mathLearning = new MathLearning();
+    }
+    window.mathLearning.submitAnswer();
+}
+
 function navigateToHome() {
     window.location.href = '/';
 }
@@ -345,6 +594,33 @@ document.addEventListener('DOMContentLoaded', function() {
             @keyframes slideOutRight {
                 from { transform: translateX(0); opacity: 1; }
                 to { transform: translateX(100%); opacity: 0; }
+            }
+            @keyframes popupZoomIn {
+                0% {
+                    opacity: 0;
+                    transform: translate(-50%, -50%) scale(0.7);
+                }
+                50% {
+                    opacity: 0.8;
+                    transform: translate(-50%, -50%) scale(1.05);
+                }
+                100% {
+                    opacity: 1;
+                    transform: translate(-50%, -50%) scale(1);
+                }
+            }
+            @keyframes popupZoomOut {
+                0% {
+                    opacity: 1;
+                    transform: translate(-50%, -50%) scale(1);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(-50%, -50%) scale(0.7);
+                }
+            }
+            .result-popup-zoom-out {
+                animation: popupZoomOut 0.3s ease forwards !important;
             }
         `;
         document.head.appendChild(style);

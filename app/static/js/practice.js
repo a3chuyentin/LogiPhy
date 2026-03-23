@@ -98,7 +98,42 @@ function showResultPopup(isCorrect, explain, onClose) {
         opacity: 0;
         transition: all 0.3s ease;
         cursor: pointer;
+        animation: popupZoomIn 0.3s ease forwards;
     `;
+    
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = `
+        @keyframes popupZoomIn {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.7);
+            }
+            50% {
+                opacity: 0.8;
+                transform: translate(-50%, -50%) scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        @keyframes popupZoomOut {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.7);
+            }
+        }
+        
+        .result-popup-zoom-out {
+            animation: popupZoomOut 0.3s ease forwards !important;
+        }
+    `;
+    document.head.appendChild(styleSheet);
     
     resultPopupElement.innerHTML = `
         <div style="font-size: 4rem; margin-bottom: 1rem;">${isCorrect ? '🎉' : '❌'}</div>
@@ -119,15 +154,10 @@ function showResultPopup(isCorrect, explain, onClose) {
     
     document.body.appendChild(resultPopupElement);
     
-    setTimeout(() => {
-        resultPopupElement.style.opacity = '1';
-        resultPopupElement.style.transform = 'translate(-50%, -50%) scale(1)';
-    }, 10);
-    
     const closeBtn = resultPopupElement.querySelector('#close-result-popup');
     closeBtn.addEventListener('click', () => {
-        resultPopupElement.style.opacity = '0';
-        resultPopupElement.style.transform = 'translate(-50%, -50%) scale(0.9)';
+        resultPopupElement.classList.add('result-popup-zoom-out');
+        
         setTimeout(() => {
             resultPopupElement.remove();
             resultPopupElement = null;
