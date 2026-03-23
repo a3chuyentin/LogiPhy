@@ -81,10 +81,7 @@ def buy_item():
 
         new_current_points = current_points - item_price
 
-        logger.info(f"Updating field {item_id} to True")
         db.update_field(username, item_id, True)
-
-        logger.info(f"Updating current points to {new_current_points}")
         db.update_current_point(username, new_current_points)
 
         logger.info(f"Purchase successful for {username}: {item_info['name']}")
@@ -92,7 +89,12 @@ def buy_item():
         return jsonify({
             'success': True,
             'message': f'Mua {item_info["name"]} thành công!',
-            'new_balance': new_current_points
+            'new_balance': new_current_points,
+            'item': {
+                'id': item_id,
+                'name': item_info['name'],
+                'price': item_price
+            }
         })
 
     except Exception as e:

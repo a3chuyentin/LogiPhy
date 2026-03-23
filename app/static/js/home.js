@@ -93,6 +93,7 @@ class HomePage {
             display.innerHTML = `
                 <div class="active-item">
                     <div>✨ <span class="item-badge-inline">${realName}</span></div>
+                    <div class="item-desc">Danh hiệu đang sử dụng</div>
                 </div>
             `;
         } else {
@@ -120,14 +121,16 @@ class HomePage {
         if (grid) {
             grid.innerHTML = inventory.map(item => {
                 const displayName = this.getTitleName(item.id);
+                const isSelected = item.selected === true || item.selected === 1;
                 return `
-                <div class="item-card inventory-item ${item.selected ? 'selected' : ''}" 
-                     onclick="homePage.selectItem('${item.id}')">
-                    <div class="item-icon">👑</div>
-                    <div class="item-name">${displayName}</div>
-                    ${item.selected ? '<div class="item-badge-small">✓</div>' : ''}
-                </div>
-            `}).join('');
+                    <div class="item-card inventory-item ${isSelected ? 'selected' : ''}" 
+                        onclick="homePage.selectItem('${item.id}')">
+                        <div class="item-icon">👑</div>
+                        <div class="item-name">${displayName}</div>
+                        ${isSelected ? '<div class="item-badge-small">✓</div>' : ''}
+                    </div>
+                `;
+            }).join('');
         }
     }
 
@@ -156,10 +159,12 @@ class HomePage {
         }).join('');
     }
 
-    renderRankings() {
+    async renderRankings() {
         const rankList = document.getElementById('rankList');
         if (!rankList || !this.rankingData) return;
 
+        rankList.style.opacity = '0.5';
+        
         rankList.innerHTML = this.rankingData.map((item, index) => {
             let medalClass = '';
             let medal = '';
@@ -183,6 +188,10 @@ class HomePage {
                 </div>
             `;
         }).join('');
+        
+        setTimeout(() => {
+            rankList.style.opacity = '1';
+        }, 100);
 
         this.updateUserFixedRank();
     }
@@ -313,10 +322,35 @@ class HomePage {
             const data = await response.json();
             
             if (data.success) {
+                const currentPointsSpan = document.getElementById('current-points');
+                const shopPointsSpan = document.getElementById('shop-points');
+                const newPoints = data.new_balance;
+                
+                if (currentPointsSpan) currentPointsSpan.textContent = newPoints;
+                if (shopPointsSpan) shopPointsSpan.textContent = newPoints;
+                
+                if (this.userData) {
+                    if (!this.userData.inventory) this.userData.inventory = [];
+                    this.userData.inventory.push({
+                        id: itemId,
+                        name: itemName,
+                        price: this.currentPurchaseItem.price,
+                        selected: false
+                    });
+                    this.userData.current_points = newPoints;
+                }
+                
+                this.renderInventory();
+                
+                this.renderShop();
+                
+                this.displaySelectedItem();
+                
                 this.showPopup(`Mua thành công "${itemName}"!`, 'success');
-                setTimeout(() => location.reload(), 1500);
+                
+                this.currentPurchaseItem = null;
             } else {
-                this.showPopup(data.error || 'Mua thất bại', 'error');
+                this.showPopup(data.error || data.message || 'Mua thất bại', 'error');
             }
         } catch (err) {
             console.error('Buy error:', err);
@@ -334,10 +368,27 @@ class HomePage {
             const data = await response.json();
             
             if (data.success) {
+                if (this.userData && this.userData.inventory) {
+                    this.userData.inventory.forEach(item => {
+                        item.selected = false;
+                    });
+                    const selectedItem = this.userData.inventory.find(item => item.id === itemId);
+                    if (selectedItem) {
+                        selectedItem.selected = true;
+                    }
+                    this.userData.selecteditem = itemId;
+                }
+                
+                this.renderInventory();
+                
+                this.displaySelectedItem();
+                
+                await this.loadRankings();
+                this.renderRankings();
+                
                 this.showPopup('Đổi danh hiệu thành công!', 'success');
-                setTimeout(() => location.reload(), 1500);
             } else {
-                this.showPopup(data.error || 'Đổi thất bại', 'error');
+                this.showPopup(data.error || data.message || 'Đổi thất bại', 'error');
             }
         } catch (err) {
             console.error('Select error:', err);

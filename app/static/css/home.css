@@ -966,3 +966,25 @@ hr {
     .cta { font-size: 0.85rem; }
     .setting-field input[type="password"] { padding: 10px 12px; font-size: 0.95rem; }
 }
+
+@keyframes selectPulse {
+    0% {
+        transform: scale(1);
+        background: rgba(240, 228, 145, 0.15);
+    }
+    50% {
+        transform: scale(1.02);
+        background: rgba(240, 228, 145, 0.3);
+    }
+    100% {
+        transform: scale(1);
+        background: rgba(240, 228, 145, 0.15);
+    }
+}
+
+.item-card.selected {
+    background: rgba(240, 228, 145, 0.15);
+    border-color: rgba(240, 228, 145, 0.8);
+    box-shadow: 0 6px 18px rgba(240, 228, 145, 0.3);
+    animation: selectPulse 0.5s ease;
+}
