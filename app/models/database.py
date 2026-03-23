@@ -1,6 +1,7 @@
 import sqlite3
 import hashlib
 import os
+import json
 from typing import Optional, Dict, List, Any
 import logging
 from app.config import Config
@@ -30,13 +31,22 @@ class Database:
                 )
             ''')
             
-            cursor.execute("PRAGMA table_info(users)")
-            existing_columns = [column[1] for column in cursor.fetchall()]
-            
-            default_items = ['none']
-            for item in default_items:
-                if item not in existing_columns:
-                    cursor.execute(f"ALTER TABLE users ADD COLUMN {item} BOOLEAN DEFAULT 0")
+            try:
+                with open(Config.SHOP_ITEMS_FILE, 'r', encoding='utf-8') as file:
+                    shop_data = json.load(file)
+                    shop_items = shop_data.get('items', [])
+                    
+                cursor.execute("PRAGMA table_info(users)")
+                existing_columns = [column[1] for column in cursor.fetchall()]
+                
+                for item in shop_items:
+                    item_id = item['id']
+                    if item_id not in existing_columns:
+                        cursor.execute(f"ALTER TABLE users ADD COLUMN {item_id} BOOLEAN DEFAULT 0")
+                        logger.info(f"Added column {item_id} to users table")
+                        
+            except Exception as e:
+                logger.error(f"Error loading shop items for DB init: {str(e)}")
             
             cursor.execute("SELECT * FROM users WHERE username = 'admin'")
             if not cursor.fetchone():
@@ -78,6 +88,19 @@ class Database:
                 INSERT INTO users (username, password, totalpoint, currentpoint, selecteditem)
                 VALUES (?, ?, 0, 0, 'none')
             ''', (username, hashed_password))
+            
+            try:
+                with open(Config.SHOP_ITEMS_FILE, 'r', encoding='utf-8') as file:
+                    shop_data = json.load(file)
+                    shop_items = shop_data.get('items', [])
+                    
+                for item in shop_items:
+                    item_id = item['id']
+                    cursor.execute(f"UPDATE users SET {item_id} = 0 WHERE username = ?", (username,))
+                    
+            except Exception as e:
+                logger.error(f"Error initializing items for new user: {str(e)}")
+            
             conn.commit()
             return True
 
@@ -114,6 +137,13 @@ class Database:
     def update_field(self, username: str, field: str, value: Any) -> bool:
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            cursor.execute("PRAGMA table_info(users)")
+            columns = [column[1] for column in cursor.fetchall()]
+            
+            if field not in columns:
+                cursor.execute(f"ALTER TABLE users ADD COLUMN {field} BOOLEAN DEFAULT 0")
+                logger.info(f"Added missing column {field} to users table")
+            
             cursor.execute(f"UPDATE users SET {field} = ? WHERE username = ?", (value, username))
             conn.commit()
             return cursor.rowcount > 0

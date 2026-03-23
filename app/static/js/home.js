@@ -271,32 +271,25 @@ class HomePage {
         if (!this.currentPurchaseItem) return;
         
         const modal = document.getElementById('confirm-modal');
-        const modalDialog = modal.querySelector('.modal-dialog');
+        if (!modal) return;
+        
         const itemName = modal.querySelector('.modal-item-name');
         const itemPrice = modal.querySelector('.modal-item-price');
         
-        if (modal && itemName && itemPrice) {
+        if (itemName && itemPrice) {
             itemName.textContent = this.currentPurchaseItem.name;
             itemPrice.textContent = `💰 ${this.currentPurchaseItem.price} điểm`;
             
             modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.add('show');
-                modalDialog.style.transform = 'translateY(0)';
-                modalDialog.style.opacity = '1';
-            }, 10);
+            modal.offsetHeight;
+            modal.classList.add('show');
         }
     }
 
     closeConfirmModal() {
         const modal = document.getElementById('confirm-modal');
-        const modalDialog = modal.querySelector('.modal-dialog');
-        
         if (modal) {
             modal.classList.remove('show');
-            modalDialog.style.transform = 'translateY(-20px)';
-            modalDialog.style.opacity = '0';
-            
             setTimeout(() => {
                 modal.classList.add('hidden');
             }, 300);
