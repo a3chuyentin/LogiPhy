@@ -740,3 +740,10 @@ document.addEventListener('DOMContentLoaded', () => {
 window.submitMathQuestion = QuestionManager.submitMathQuestion.bind(QuestionManager);
 window.submitAnswer = QuestionManager.submitAnswer.bind(QuestionManager);
 window.navigateToHome = navigateToHome;
+
+customElements.whenDefined('math-field').then(() => {
+    const mf = document.getElementById('question');
+    mf.defaultMode = 'text';
+    mf.mode = 'text';
+    mf.smartMode = true;
+});

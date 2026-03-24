@@ -628,3 +628,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.head.appendChild(style);
     }
 });
+
+customElements.whenDefined('math-field').then(() => {
+    const mf = document.getElementById('question');
+    mf.defaultMode = 'text';
+    mf.mode = 'text';
+    mf.smartMode = true;
+});

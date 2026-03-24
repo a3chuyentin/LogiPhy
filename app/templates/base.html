@@ -19,6 +19,8 @@
             }
         }
     </style>
+    
+    {% if not is_admin %}
     <script>
         (function() {
             function detectDebugger() {
@@ -124,6 +126,7 @@
             }
         })();
     </script>
+    {% endif %}
 </head>
 
 <body>
@@ -134,31 +137,9 @@
 
     {% block linkjs %}
     {% endblock %}
-    <script>
-        customElements.whenDefined('math-field').then(() => {
-            const mf = document.getElementById('question');
-            mf.defaultMode = 'text';
-            mf.mode = 'text';
-        });
-        
-        window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                processEscapes: true,
-                tags: 'ams'
-            },
-            options: {
-                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-                ignoreHtmlClass: 'tex-ignore'
-            },
-            svg: {
-                fontCache: 'global'
-            }
-        };
-    </script>
     <script defer src="https://cdn.jsdelivr.net/npm/mathlive"></script>
     <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script src="/static/js/base.js"></script>
 </body>
 
 </html>
