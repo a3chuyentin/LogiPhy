@@ -3,6 +3,26 @@ from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 from app.config import Config
+from app.services.gemini_service import gemini_service
+from app.services.lmstudio_service import lmstudio_service
+
+class AIServiceFactory:
+    _service_instance = None
+    
+    @staticmethod
+    def get_service():
+        if AIServiceFactory._service_instance is None:
+            if Config.AI_SERVICE_TYPE == 'gemini':
+                AIServiceFactory._service_instance = gemini_service
+            elif Config.AI_SERVICE_TYPE == 'lm_studio':
+                AIServiceFactory._service_instance = lmstudio_service
+            else:
+                raise ValueError(f"Unknown AI service type: {Config.AI_SERVICE_TYPE}")
+        
+        return AIServiceFactory._service_instance
+
+def get_ai_service():
+    return AIServiceFactory.get_service()
 
 def create_app():
     app = Flask(__name__)

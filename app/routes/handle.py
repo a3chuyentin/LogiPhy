@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, session
 import time
 import logging
 from app.models.database import Database
-from app.services.gemini_service import gemini_service
+from app.services import get_ai_service
 from app.utils.helpers import read_prompt_file, create_prompt_content, validate_question_response
 from app.utils.decorators import login_required
 from app.config import Config
@@ -29,11 +29,12 @@ def process_question():
         return jsonify({'error': 'Không thể đọc file prompt'}), 500
 
     content = create_prompt_content(lop, question_data, prompt_template)
-    logger.info(f"Sending to Gemini: {content}")
+    logger.info(f"Sending to AI: {content}")
 
     try:
-        questions_json = gemini_service.generate_question(content)
-        logger.info(f"Gemini response: {questions_json}")
+        ai_service = get_ai_service()
+        questions_json = ai_service.generate_question(content)
+        logger.info(f"AI response: {questions_json}")
 
         if not questions_json:
             return jsonify({
@@ -81,7 +82,8 @@ def process_answer():
     prompt = f"Lớp: {lop}\nCâu hỏi: {question}\nCâu trả lời của học sinh: {user_answer}\n\n{prompt_template}"
 
     try:
-        compare_result = gemini_service.generate_question(prompt)
+        ai_service = get_ai_service()
+        compare_result = ai_service.generate_question(prompt)
         logger.info(f"Comparison result for question: {question}")
         
         try:

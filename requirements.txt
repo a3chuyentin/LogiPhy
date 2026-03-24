@@ -3,3 +3,5 @@ flask
 dotenv
 mistune
 flask-cors
+json5
+json-repair

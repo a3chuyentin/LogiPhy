@@ -1,16 +1,14 @@
-from google import genai
-from google.genai import types
+import requests
 import json
 import logging
 from typing import Optional, Dict, Any, List
-from app.config import Config
 import re
 import json5
 from json_repair import repair_json
 
 logger = logging.getLogger(__name__)
 
-class GeminiService:
+class LMStudioService:
     _instance = None
     
     def __new__(cls):
@@ -22,33 +20,46 @@ class GeminiService:
     def __init__(self):
         if self._initialized:
             return
-            
+        
+        from app.config import Config
         Config.validate()
         
-        self.api_key = Config.GEMINI_API_KEY
-        self.model = Config.GEMINI_MODEL
-        self.temperature = Config.GEMINI_TEMPERATURE
-        self.max_tokens = Config.GEMINI_MAX_TOKENS
+        self.base_url = Config.LM_STUDIO_BASE_URL
+        self.model = Config.LM_STUDIO_MODEL
+        self.temperature = Config.AI_TEMPERATURE
+        self.max_tokens = Config.AI_MAX_TOKENS
+        self.timeout = Config.LM_STUDIO_TIMEOUT
         
-        self.client = genai.Client(api_key=self.api_key)
         self._initialized = True
         
-        logger.info(f"GeminiService initialized with model: {self.model}")
+        logger.info(f"LMStudioService initialized with base URL: {self.base_url}, model: {self.model}")
     
     def generate_content(self, prompt: str, **kwargs) -> Optional[str]:
         try:
             temperature = kwargs.get('temperature', self.temperature)
             max_tokens = kwargs.get('max_tokens', self.max_tokens)
             
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=temperature,
-                    max_output_tokens=max_tokens,
-                )
-            )
-            return response.text
+            url = f"{self.base_url}/v1/chat/completions"
+            
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "stream": False
+            }
+            
+            response = requests.post(url, json=payload, timeout=self.timeout)
+            response.raise_for_status()
+            
+            result = response.json()
+            return result["choices"][0]["message"]["content"]
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error calling LM Studio API: {e}")
+            return None
         except Exception as e:
             logger.error(f"Error generating content: {e}")
             return None
@@ -72,7 +83,6 @@ class GeminiService:
             return None
     
     def _parse_json_with_fallback(self, text: str) -> Optional[Any]:
-        
         try:
             return json.loads(text)
         except json.JSONDecodeError as e:
@@ -203,17 +213,37 @@ class GeminiService:
             temp = temperature if temperature is not None else self.temperature
             tokens = max_tokens if max_tokens is not None else self.max_tokens
             
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=temp,
-                    max_output_tokens=tokens,
-                )
-            )
-            return response.text
+            url = f"{self.base_url}/v1/chat/completions"
+            
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": temp,
+                "max_tokens": tokens,
+                "stream": False
+            }
+            
+            response = requests.post(url, json=payload, timeout=self.timeout)
+            response.raise_for_status()
+            
+            result = response.json()
+            return result["choices"][0]["message"]["content"]
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error calling LM Studio API with custom config: {e}")
+            return None
         except Exception as e:
             logger.error(f"Error generating content with custom config: {e}")
             return None
+    
+    def health_check(self) -> bool:
+        try:
+            url = f"{self.base_url}/v1/models"
+            response = requests.get(url, timeout=5)
+            return response.status_code == 200
+        except:
+            return False
 
-gemini_service = GeminiService()    
+lmstudio_service = LMStudioService()
