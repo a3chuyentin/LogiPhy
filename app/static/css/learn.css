@@ -262,6 +262,26 @@ math-field {
     font-size: 1.4rem;
     color: white;
     overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 0;
+}
+
+.math-content::-webkit-scrollbar {
+    height: 6px;
+}
+
+.math-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.math-content::-webkit-scrollbar-thumb {
+    background: rgba(240, 228, 145, 0.5);
+    border-radius: 3px;
+}
+
+.math-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(240, 228, 145, 0.8);
 }
 
 .steps-list {
@@ -293,56 +313,51 @@ math-field {
     line-height: 1.6;
     font-size: 1rem;
     word-wrap: break-word;
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
-.step-content mjx-container {
-    display: inline;
-    margin: 0;
-    padding: 0 1px;
-    line-height: 1;
-    vertical-align: -0.3ex;
-    width: auto;
-    height: auto;
-    min-width: 0;
-    min-height: 0;
+.step-content::-webkit-scrollbar {
+    height: 6px;
+}
+
+.step-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.step-content::-webkit-scrollbar-thumb {
+    background: rgba(240, 228, 145, 0.5);
+    border-radius: 3px;
+}
+
+.step-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(240, 228, 145, 0.8);
 }
 
 mjx-container {
-    display: inline;
-    margin: 0;
-    padding: 0;
+    display: inline-block;
+    margin: 0 2px;
+    vertical-align: middle;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
 mjx-container[display="true"] {
-    display: inline;
+    display: block;
+    text-align: center;
+    margin: 1em 0;
+    overflow-x: auto;
 }
 
-.step-content .MathJax,
-.step-content .MathJax_Display,
-.step-content .MathJax_Preview {
-    display: inline;
-    margin: 0;
-    padding: 0;
-    text-align: left;
+mjx-mfrac {
+    display: inline-block;
+    vertical-align: middle;
 }
 
-.step-content mjx-container,
-.step-content .MathJax {
-    float: none;
-    clear: none;
-}
-
-.step-content * {
-    display: inline;
-    white-space: normal;
-}
-
-.step-content br {
-    display: none;
-}
-
-mjx-container {
-    animation: forceInline 0.1s forwards;
+mjx-mrow {
+    display: inline-block;
 }
 
 .answer-section {
@@ -364,12 +379,23 @@ mjx-container {
     font-weight: 600;
     font-size: 1.2rem;
     text-align: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 0;
 }
 
-.answer-content mjx-container {
-    display: inline;
-    margin: 0;
-    padding: 0;
+.answer-content::-webkit-scrollbar {
+    height: 6px;
+}
+
+.answer-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.answer-content::-webkit-scrollbar-thumb {
+    background: rgba(240, 228, 145, 0.5);
+    border-radius: 3px;
 }
 
 .loading-toast {
@@ -409,22 +435,67 @@ mjx-container {
     margin-top: 10px;
 }
 
-@keyframes forceInline {
-    from { display: block; margin: 1em 0; }
-    to { display: inline; margin: 0; }
-}
-
 @media (max-width: 768px) {
-    .learn-container { padding: 20px 15px; }
-    .learn-card { padding: 24px 16px; }
-    .learn-header { flex-direction: column; gap: 15px; text-align: center; }
-    .header-title h1 { font-size: 1.4rem; }
-    .back-btn { align-self: flex-start; }
-    .loading-toast { bottom: 20px; right: 20px; left: 20px; justify-content: center; }
-    .step-content { padding: 15px; font-size: 0.95rem; }
+    .learn-container {
+        padding: 20px 15px;
+    }
+    
+    .learn-card {
+        padding: 24px 16px;
+    }
+    
+    .learn-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .header-title h1 {
+        font-size: 1.4rem;
+    }
+    
+    .back-btn {
+        align-self: flex-start;
+    }
+    
+    .loading-toast {
+        bottom: 20px;
+        right: 20px;
+        left: 20px;
+        justify-content: center;
+    }
+    
+    .step-content {
+        padding: 15px;
+        font-size: 0.95rem;
+    }
+    
+    mjx-container[display="true"] {
+        font-size: 0.9em;
+    }
+    
+    .math-content {
+        font-size: 1.1rem;
+    }
+    
+    .answer-content {
+        font-size: 1rem;
+    }
 }
 
 @media print {
-    .back-btn, .btn-continue { display: none; }
-    .learn-card { box-shadow: none; border: 1px solid #ccc; }
+    .back-btn, .btn-continue, .loading-toast {
+        display: none;
+    }
+    
+    .learn-card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+        background: white;
+        color: black;
+    }
+    
+    mjx-container {
+        color: black;
+    }
 }

@@ -491,6 +491,14 @@ class QuestionManager {
         DomUtils.toggleVisibility(content, true);
         DomUtils.toggleVisibility(link, false);
         
+        let answerContent = content.innerHTML;
+        if (answerContent && !answerContent.includes('<br>')) {
+            answerContent = answerContent
+                .replace(/(Bước\s+\d+:)/g, '<br><strong>$1</strong>')
+                .replace(/^<br>/, '');
+            content.innerHTML = answerContent;
+        }
+        
         this.renderMathAggressive([content]);
         if(practiceState.sessionId) SessionManager.zeroOutPoints();
 
@@ -508,12 +516,9 @@ class QuestionManager {
         resultDiv.className = 'result explanation';
         resultDiv.style.animation = 'slideUp 0.3s ease';
         
-        // Xử lý explain để hiển thị từng bước với xuống dòng
         let formattedExplain = explain;
         
-        // Kiểm tra nếu explain có dạng JSON array hoặc có cấu trúc bước
         try {
-            // Thử parse JSON
             const parsed = JSON.parse(explain);
             if (Array.isArray(parsed)) {
                 formattedExplain = parsed.map((item, idx) => {
@@ -524,9 +529,7 @@ class QuestionManager {
                 }).join('');
             }
         } catch(e) {
-            // Không phải JSON, xử lý text thường
             if (explain && (explain.includes('Bước') || explain.includes('bước'))) {
-                // Tách thành các bước dựa trên pattern "Bước X:"
                 const steps = explain.split(/(?=Bước\s+\d+:)|(?=bước\s+\d+:)/);
                 if (steps.length > 1) {
                     let stepsHTML = '';
@@ -555,7 +558,6 @@ class QuestionManager {
             </div>
         `;
         
-        // Thêm CSS cho giải thích từng bước
         if (!document.querySelector('#explanation-step-style')) {
             const style = document.createElement('style');
             style.id = 'explanation-step-style';
@@ -709,64 +711,13 @@ class QuestionManager {
         if (validElements.length === 0) return;
 
         if (window.MathJax && window.MathJax.typesetPromise) {
-            if (window.MathJax.config && window.MathJax.config.tex) {
-                window.MathJax.config.tex.inlineMath = [['$', '$'], ['\\(', '\\)']];
-            }
-           
             window.MathJax.typesetPromise(validElements)
-                .then(() => {
-                    this.forceAggressiveInline();
-                })
-                .catch(err => {
-                    console.warn('MathJax failed, forcing inline:', err);
-                    this.forceAggressiveInline();
-                });
-        } else {
-            this.forceAggressiveInline();
+                .catch(err => console.warn('MathJax render failed:', err));
         }
     }
 
-    static forceAggressiveInline() {
-        setTimeout(() => {
-            const allMathElements = document.querySelectorAll(
-                'mjx-container, .MathJax, .MathJax_Display, .MathJax_Preview, [class*="math"]'
-            );
-           
-            allMathElements.forEach(mathEl => {
-                mathEl.style.cssText = `
-                    display: inline !important;
-                    margin: 0 !important;
-                    padding: 0 1px !important;
-                    line-height: 1 !important;
-                    vertical-align: middle !important;
-                    width: auto !important;
-                    height: auto !important;
-                    float: none !important;
-                    clear: none !important;
-                    white-space: nowrap !important;
-                `;
-               
-                const children = mathEl.querySelectorAll('*');
-                children.forEach(child => {
-                    child.style.display = 'inline !important';
-                    child.style.margin = '0 !important';
-                    child.style.padding = '0 !important';
-                });
-            });
-
-            const stepContents = document.querySelectorAll('.step-content, .result, #final-answer-content');
-            stepContents.forEach(content => {
-                content.style.whiteSpace = 'normal';
-                content.style.wordWrap = 'break-word';
-               
-                const children = Array.from(content.childNodes);
-                children.forEach(child => {
-                    if (child.nodeType === Node.TEXT_NODE) {
-                        child.textContent = child.textContent.replace(/\s+/g, ' ');
-                    }
-                });
-            });
-        }, 150);
+    static renderMathJax(elements) {
+        this.renderMathAggressive(elements);
     }
 
     static renderMathJax(elements) {

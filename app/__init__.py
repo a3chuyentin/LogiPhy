@@ -14,7 +14,7 @@ class AIServiceFactory:
         if AIServiceFactory._service_instance is None:
             if Config.AI_SERVICE_TYPE == 'gemini':
                 AIServiceFactory._service_instance = gemini_service
-            elif Config.AI_SERVICE_TYPE == 'lm_studio':
+            elif Config.AI_SERVICE_TYPE == 'lmstudio':
                 AIServiceFactory._service_instance = lmstudio_service
             else:
                 raise ValueError(f"Unknown AI service type: {Config.AI_SERVICE_TYPE}")

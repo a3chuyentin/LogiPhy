@@ -338,10 +338,95 @@ class MathLearning {
         resultDiv.className = 'result explanation';
         resultDiv.style.animation = 'slideUp 0.3s ease';
         
+        let formattedExplain = explain;
+        
+        try {
+            const parsed = JSON.parse(explain);
+            if (Array.isArray(parsed)) {
+                formattedExplain = parsed.map((item, idx) => {
+                    return `<div class="step-item">
+                                <div class="step-header">📌 Bước ${idx + 1}</div>
+                                <div class="step-detail">${item}</div>
+                            </div>`;
+                }).join('');
+            }
+        } catch(e) {
+            if (explain && (explain.includes('Bước') || explain.includes('bước'))) {
+                const steps = explain.split(/(?=Bước\s+\d+:)|(?=bước\s+\d+:)/);
+                if (steps.length > 1) {
+                    let stepsHTML = '';
+                    steps.forEach((step, index) => {
+                        if (step.trim()) {
+                            const stepMatch = step.match(/(Bước|bước)\s+(\d+):/);
+                            const stepNumber = stepMatch ? stepMatch[2] : (index + 1);
+                            const stepContent = step.replace(/(Bước|bước)\s+\d+:/, '').trim();
+                            stepsHTML += `
+                                <div class="step-item">
+                                    <div class="step-header">📌 Bước ${stepNumber}</div>
+                                    <div class="step-detail">${stepContent}</div>
+                                </div>
+                            `;
+                        }
+                    });
+                    if (stepsHTML) formattedExplain = stepsHTML;
+                }
+            }
+        }
+        
         resultDiv.innerHTML = `
             <h3>📖 Giải thích chi tiết</h3>
-            <p><strong>Lời giải:</strong> ${explain}</p>
+            <div class="explanation-content">
+                ${formattedExplain}
+            </div>
         `;
+        
+        if (!document.querySelector('#explanation-step-style')) {
+            const style = document.createElement('style');
+            style.id = 'explanation-step-style';
+            style.textContent = `
+                .explanation-content {
+                    max-height: 500px;
+                    overflow-y: auto;
+                    padding: 0.5rem;
+                }
+                .step-item {
+                    margin-bottom: 1rem;
+                    padding: 0.75rem;
+                    border-left: 3px solid #4284DB;
+                    background: rgba(255,255,255,0.05);
+                    border-radius: 0 8px 8px 0;
+                    transition: all 0.3s ease;
+                }
+                .step-item:hover {
+                    background: rgba(255,255,255,0.1);
+                    transform: translateX(5px);
+                }
+                .step-header {
+                    font-weight: bold;
+                    color: #ffd700;
+                    margin-bottom: 0.5rem;
+                    font-size: 1rem;
+                }
+                .step-detail {
+                    line-height: 1.6;
+                    color: rgba(255,255,255,0.9);
+                    word-wrap: break-word;
+                }
+                #answer-result {
+                    margin-top: 1rem;
+                    background: linear-gradient(135deg, rgba(66, 132, 219, 0.2), rgba(41, 234, 196, 0.2));
+                    border-radius: 12px;
+                    padding: 1rem;
+                    backdrop-filter: blur(10px);
+                }
+                #answer-result h3 {
+                    color: white;
+                    margin-bottom: 1rem;
+                    font-size: 1.2rem;
+                }
+            `;
+            document.head.appendChild(style);
+        }
         
         if (document.getElementById('answer-result-container')) {
             document.getElementById('answer-result-container').appendChild(resultDiv);
@@ -455,32 +540,6 @@ class MathLearning {
             `;
         }
 
-        const answerInputHTML = `
-            <div id="answer-input-container" class="answer-input-section">
-                <h3>📝 Nhập câu trả lời của bạn:</h3>
-                <input type="text" id="user-answer" placeholder="Nhập đáp án tại đây..." style="width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;">
-                <button class="submit-answer-btn" style="background: linear-gradient(135deg, #4284DB, #29EAC4); color: white; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">Kiểm tra đáp án</button>
-            </div>
-            <div id="answer-result-container"></div>
-        `;
-        
-        solveDiv.insertAdjacentHTML('beforeend', answerInputHTML);
-        
-        const answerBtn = solveDiv.querySelector('.submit-answer-btn');
-        if (answerBtn) {
-            answerBtn.onclick = () => this.submitAnswer();
-        }
-        
-        const userAnswerInput = document.getElementById('user-answer');
-        if (userAnswerInput) {
-            userAnswerInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.submitAnswer();
-                }
-            });
-        }
-
         if (footerDiv && !footerDiv.querySelector('.btn-continue')) {
             const continueBtn = document.createElement('button');
             continueBtn.className = 'btn-continue';
@@ -499,66 +558,9 @@ class MathLearning {
         if (validElements.length === 0) return;
 
         if (window.MathJax && window.MathJax.typesetPromise) {
-            if (window.MathJax.config && window.MathJax.config.tex) {
-                window.MathJax.config.tex.inlineMath = [['$', '$'], ['\\(', '\\)']];
-                window.MathJax.config.tex.displayMath = [];
-            }
-            
             window.MathJax.typesetPromise(validElements)
-                .then(() => {
-                    this.forceAggressiveInline();
-                })
-                .catch(err => {
-                    console.warn('MathJax aggressive rendering failed:', err);
-                    this.forceAggressiveInline();
-                });
-        } else {
-            this.forceAggressiveInline();
+                .catch(err => console.warn('MathJax render failed:', err));
         }
-    }
-
-    forceAggressiveInline() {
-        setTimeout(() => {
-            const allMathElements = document.querySelectorAll(
-                'mjx-container, .MathJax, .MathJax_Display, .MathJax_Preview, [class*="math"]'
-            );
-            
-            allMathElements.forEach(mathEl => {
-                mathEl.style.cssText = `
-                    display: inline !important;
-                    margin: 0 !important;
-                    padding: 0 1px !important;
-                    line-height: 1 !important;
-                    vertical-align: middle !important;
-                    width: auto !important;
-                    height: auto !important;
-                    float: none !important;
-                    clear: none !important;
-                    white-space: nowrap !important;
-                `;
-                
-                const children = mathEl.querySelectorAll('*');
-                children.forEach(child => {
-                    child.style.display = 'inline !important';
-                    child.style.margin = '0 !important';
-                    child.style.padding = '0 !important';
-                });
-            });
-
-            const stepContents = document.querySelectorAll('.step-content, .result, #final-answer-content, .answer-content');
-            stepContents.forEach(content => {
-                content.style.whiteSpace = 'normal';
-                content.style.wordWrap = 'break-word';
-                
-                const children = Array.from(content.childNodes);
-                children.forEach(child => {
-                    if (child.nodeType === Node.TEXT_NODE) {
-                        child.textContent = child.textContent.replace(/\s+/g, ' ');
-                    }
-                });
-            });
-
-        }, 150);
     }
 }
 
@@ -624,11 +626,5 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         `;
         document.head.appendChild(style);
-    }
-});
-
-document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible' && window.mathLearning) {
-        window.mathLearning.forceAggressiveInline();
     }
 });

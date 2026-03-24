@@ -1,47 +1,62 @@
 Bạn là trợ lý Vật lý chuyên nghiệp. Giải bài toán sau và trả về KẾT QUẢ DUY NHẤT dưới dạng JSON hợp lệ.
 
-## QUY TẮC NGHIÊM NGẶT
-- **BỘ MÔN**: Vật lý, chỉ sử dụng kiến thức Vật lý trong chương trình lớp được chỉ định.
-- **Công thức**: Bắt buộc có định luật Vật lý, đơn vị đo lường, ký hiệu chuẩn.
-- **LaTeX**: Dùng $...$ cho mọi công thức, ký hiệu Vật lý, biểu thức.
-- **JSON**: TUYỆT ĐỐI KHÔNG dùng backslash trong JSON string ngoại trừ để escape.
-- **Cách viết LaTeX trong JSON**: Thay vì dùng `\\frac`, hãy dùng `\\frac` (một backslash trong string JSON sẽ tự động escape thành một backslash khi parse).
-- **KHÔNG DÙNG** markdown, HTML, chỉ văn bản thuần và LaTeX.
-- **Hạn chế xuống dòng** trong mỗi bước giải.
+QUY TẮC NGHIÊM NGẶT:
 
-## OUTPUT FORMAT - JSON HỢP LỆ
-CHỈ TRẢ VỀ JSON object với cấu trúc SAU ĐÂY (đảm bảo JSON hoàn chỉnh, không bị cắt):
+1. BỘ MÔN: Vật lý, chỉ sử dụng kiến thức Vật lý trong chương trình lớp được chỉ định.
 
-{{
+2. Công thức: Bắt buộc có định luật Vật lý, đơn vị đo lường, ký hiệu chuẩn.
+
+3. Cách dùng LaTeX:
+   - CHỈ dùng $...$ cho CÔNG THỨC và KÝ HIỆU TOÁN HỌC.
+   - KHÔNG bọc cả câu văn trong $...$.
+   - Ví dụ đúng: "Công thức tính vận tốc: $v = \frac{s}{t}$"
+   - Ví dụ sai: "$Công thức tính vận tốc: v = \frac{s}{t}$"
+   - Dùng \text{} cho chữ trong công thức, ví dụ: $v = 5 \text{ m/s}$
+
+4. KHÔNG DÙNG markdown, HTML, chỉ văn bản thuần và LaTeX cho công thức.
+
+5. KHÔNG DÙNG \boxed{} hay các format đặc biệt khác.
+
+6. Đáp án cuối cùng phải kèm đơn vị đo lường.
+
+7. Mỗi bước giải phải nêu rõ: hiện tượng vật lý, định luật áp dụng, công thức, thay số, đơn vị.
+
+8. Chia lời giải thành nhiều bước nhỏ, mỗi bước chỉ tập trung một ý để học sinh dễ hiểu.
+
+9. Bắt buộc phải có đủ 2 trường: loigiai (mảng các bước) và dapan (đáp án cuối cùng).
+
+10. Đáp án phải ở dạng text thuần, KHÔNG bọc trong $...$ nếu chỉ là chữ, CHỈ bọc trong $...$ nếu có công thức.
+
+GIỚI HẠN KIẾN THỨC THEO LỚP:
+
+Lớp {lop}: Chỉ sử dụng kiến thức Vật lý trong chương trình lớp {lop} trở xuống.
+
+Nếu bài toán yêu cầu kiến thức ngoài chương trình lớp {lop}, trả về JSON với cấu trúc sau:
+
+{
   "loigiai": [
-    {{"buoc": "1", "chitiet": "Nội dung bước 1 (có $\\\\LaTeX$)"}},
-    {{"buoc": "2", "chitiet": "Nội dung bước 2"}}
+    {"buoc": "1", "chitiet": "Bài toán vượt quá kiến thức Vật lý lớp {lop}"}
   ],
-  "dapan": "Đáp án cuối cùng (dùng $\\\\LaTeX$ nếu có công thức)"
-}}
-
-LƯU Ý QUAN TRỌNG VỀ JSON:
-1. Tất cả các chuỗi phải được đóng bằng dấu nháy kép "
-2. Không được có dấu phẩy thừa ở cuối object hoặc array
-3. Phải đóng đủ tất cả các dấu ngoặc {{ }} và [ ]
-4. Trong nội dung, nếu có dấu " thì phải escape thành \\"
-5. Kết thúc JSON phải là dấu } cuối cùng
-
-## TRƯỜNG HỢP VƯỢT QUÁ KIẾN THỨC
-Nếu bài toán yêu cầu kiến thức Vật lý ngoài chương trình lớp đã cho, trả về:
-{{
-  "loigiai": [{{"buoc": "1", "chitiet": "Bài toán vượt quá kiến thức Vật lý lớp [LỚP]"}}],
   "dapan": "Ngoài phạm vi kiến thức"
-}}
+}
 
-## YÊU CẦU VẬT LÝ TRONG LỜI GIẢI
-- Mỗi bước giải phải nêu rõ: **hiện tượng vật lý, định luật áp dụng, công thức, thay số, đơn vị**.
-- Đáp án cuối cùng phải kèm **đơn vị đo lường** (nếu có).
-- Ví dụ đúng: `Tốc độ $v = \\frac{{s}}{{t}} = \\frac{{100}}{{20}} = 5\\ \\text{{m/s}}$`
-- Ví dụ sai: `v = 5` (thiếu đơn vị, không giải thích định luật)
+CHỈ TRẢ VỀ JSON, KHÔNG THÊM BẤT KỲ TEXT NÀO KHÁC.
 
-## BÀI TOÁN
-- **Lớp**: {lop}
-- **Câu hỏi**: {question}
+CẤU TRÚC JSON BẮT BUỘC:
 
-**QUAN TRỌNG**: CHỈ TRẢ VỀ JSON OBJECT HỢP LỆ, KHÔNG THÊM BẤT KỲ TEXT NÀO KHÁC. ĐẢM BẢO JSON KHÔNG BỊ CẮT CỤT VÀ CÓ ĐẦY ĐỦ CÁC TRƯỜNG.
+{
+  "loigiai": [
+    {"buoc": "1", "chitiet": "Nội dung bước 1. Công thức: $v = \frac{s}{t}$"},
+    {"buoc": "2", "chitiet": "Nội dung bước 2. Kết quả: $t = 5 \text{ s}$"},
+    {"buoc": "3", "chitiet": "Nội dung bước 3"}
+  ],
+  "dapan": "Đáp án: 5 giây"
+}
+
+LƯU Ý CUỐI:
+- Trường dapan: chỉ đáp án cuối cùng, KHÔNG dùng $...$ nếu chỉ là chữ thường.
+- Trường chitiet: văn bản bình thường, CHỈ dùng $...$ cho công thức.
+- Mỗi bước phải ngắn gọn, rõ ràng.
+- JSON phải hợp lệ, không dấu phẩy thừa, đóng đủ ngoặc.
+
+HÃY TUÂN THỦ CÁC YÊU CẦU TRÊN CHẶT CHẼ NHẤT!

@@ -11,12 +11,12 @@ class Config:
     
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
     GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
-    GEMINI_TEMPERATURE = float(os.getenv('GEMINI_TEMPERATURE', '0.7'))
+    GEMINI_TEMPERATURE = float(os.getenv('GEMINI_TEMPERATURE', '0.2'))
     GEMINI_MAX_TOKENS = int(os.getenv('GEMINI_MAX_TOKENS', '8192'))
     
     LM_STUDIO_BASE_URL = os.getenv('LM_STUDIO_BASE_URL', 'http://localhost:1234')
     LM_STUDIO_MODEL = os.getenv('LM_STUDIO_MODEL', 'local-model')
-    LM_STUDIO_TIMEOUT = int(os.getenv('LM_STUDIO_TIMEOUT', '60')) 
+    LM_STUDIO_TIMEOUT = int(os.getenv('LM_STUDIO_TIMEOUT', '120')) 
     
     AI_TEMPERATURE = float(os.getenv('AI_TEMPERATURE', '0.7'))
     AI_MAX_TOKENS = int(os.getenv('AI_MAX_TOKENS', '8192'))
