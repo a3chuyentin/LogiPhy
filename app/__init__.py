@@ -40,7 +40,7 @@ def create_app():
     dotenv_path = os.path.join(BASE_DIR, '.env')
     load_dotenv(dotenv_path)
     
-    from app.context_processors import inject_user_info
+    from app.utils.context_processors import inject_user_info
     app.context_processor(inject_user_info)
     
     from .routes.auth import auth_bp
