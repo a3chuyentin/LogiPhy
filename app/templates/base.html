@@ -135,6 +135,12 @@
     {% block linkjs %}
     {% endblock %}
     <script>
+        customElements.whenDefined('math-field').then(() => {
+            const mf = document.getElementById('question');
+            mf.defaultMode = 'text';
+            mf.mode = 'text';
+        });
+        
         window.MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
