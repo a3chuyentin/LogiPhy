@@ -2,7 +2,7 @@ import requests
 import logging
 from typing import Optional, Dict, Any, List
 import re
-import json5
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ class LMStudioService:
                 logger.error("No JSON extracted from response")
                 return None
             
-            data = json5.loads(json_str)
+            data = self._safe_json_parse(json_str)
             
             return data if isinstance(data, list) else [data]
                     
@@ -89,6 +89,27 @@ class LMStudioService:
         
         match = re.search(r'(\{[\s\S]*\}|\[[\s\S]*\])', text.strip())
         return match.group(1) if match else None
+    
+    def _safe_json_parse(self, json_str: str):
+        try:
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            try:
+                json_str = json_str.replace('\\"', '"')
+                json_str = json_str.replace("\\'", "'")
+                json_str = re.sub(r'(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', '', json_str)
+                return json.loads(json_str)
+            except json.JSONDecodeError:
+                try:
+                    json_str = json_str.encode('utf-8').decode('unicode_escape')
+                    return json.loads(json_str)
+                except:
+                    try:
+                        import ast
+                        return ast.literal_eval(json_str)
+                    except:
+                        logger.error(f"Failed to parse JSON: {json_str[:200]}")
+                        raise
     
     def generate_with_custom_config(self, prompt: str, temperature: float = None, max_tokens: int = None) -> Optional[str]:
         return self.generate_content(prompt, temperature=temperature, max_tokens=max_tokens)

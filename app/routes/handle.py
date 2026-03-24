@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, Response
 import time
 import logging
 from app.models.database import Database
@@ -6,6 +6,7 @@ from app.services import get_ai_service
 from app.utils.helpers import read_prompt_file, create_prompt_content, validate_question_response
 from app.utils.decorators import login_required
 from app.config import Config
+import json
 
 handle_bp = Blueprint('handle', __name__)
 db = Database()
@@ -37,28 +38,36 @@ def process_question():
         logger.info(f"AI response: {questions_json}")
 
         if not questions_json:
-            return jsonify({
+            final_result = {
                 'loigiai': [{'buoc': '1', 'chitiet': 'Lỗi: Không có phản hồi từ AI'}],
                 'dapan': 'Lỗi hệ thống'
-            })
-
-        result = questions_json[0] if isinstance(questions_json, list) else questions_json
+            }
+        else:
+            result = questions_json[0] if isinstance(questions_json, list) else questions_json
+            final_result = validate_question_response(result)
         
-        final_result = validate_question_response(result)
         logger.info(f"Final processed result: {final_result}")
         
-        return jsonify(final_result)
+        return Response(
+            json.dumps(final_result, ensure_ascii=False),
+            mimetype='application/json'
+        )
 
     except Exception as e:
         logger.error(f"Error in process_question: {str(e)}")
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
         
-        return jsonify({
+        error_result = {
             'loigiai': [{'buoc': '1', 'chitiet': f'Lỗi hệ thống: {str(e)}'}],
             'dapan': 'Lỗi xử lý'
-        }), 500
-
+        }
+        
+        return Response(
+            json.dumps(error_result, ensure_ascii=False),
+            mimetype='application/json',
+            status=500
+        )
 
 @handle_bp.route('/process-answer', methods=['POST'])
 @login_required
@@ -103,12 +112,15 @@ def process_answer():
             logger.info("Sai câu trả lời.")
 
         session[f"score_{question_id}"] = 0
-        return jsonify(compare_result)
+        
+        return Response(
+            json.dumps(compare_result, ensure_ascii=False),
+            mimetype='application/json'
+        )
         
     except Exception as e:
         logger.error(f"Error processing answer: {str(e)}")
         return jsonify({'error': 'Có lỗi xảy ra khi xử lý câu trả lời'}), 500
-
 
 @handle_bp.route('/api/new_session_id', methods=['POST'])
 @login_required
