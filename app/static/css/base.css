@@ -13,7 +13,13 @@ html, body {
 }
 
 body {
-    background: linear-gradient(135deg, #4284DB 0%, #29EAC4 100%);
+    background-color: #0A2353; 
+    background-image: 
+        radial-gradient(at 10% 40%, #56E1E9 0px, transparent 50%), 
+        radial-gradient(at 90% 10%, #112C71 0px, transparent 50%),
+        radial-gradient(at 50% 60%, #BB63FF 0px, transparent 40%),
+        radial-gradient(at 20% 80%, #5B58EB 0px, transparent 40%);
+    background-attachment: fixed;
     position: relative;
 }
 

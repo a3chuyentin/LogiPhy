@@ -8,7 +8,6 @@ html, body {
     height: auto;
     min-height: 100vh;
     overflow-y: auto;
-    background: linear-gradient(135deg, #4284DB 0%, #29EAC4 50%, #4284DB 100%);
 }
 
 body::before {
