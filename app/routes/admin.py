@@ -131,3 +131,72 @@ def admin_change_user_password():
         return jsonify({'success': True, 'message': f'Đổi mật khẩu cho {username} thành công'})
     else:
         return jsonify({'success': False, 'error': 'Không thể đổi mật khẩu'}), 500
+
+@admin_bp.route('/api/admin/shop/items')
+@api_admin_required
+def admin_get_shop_items():
+    try:
+        items = db.get_all_shop_items()
+        return jsonify({'success': True, 'items': items})
+    except Exception as e:
+        logger.error(f"Error getting shop items: {str(e)}")
+        return jsonify({'success': False, 'error': 'Có lỗi xảy ra'}), 500
+
+@admin_bp.route('/api/admin/shop/add', methods=['POST'])
+@api_admin_required
+def admin_add_shop_item():
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'Không có dữ liệu'}), 400
+
+    item_id = data.get('id', '').strip()
+    name = data.get('name', '').strip()
+    price = data.get('price', 0)
+
+    if not item_id or not name or price <= 0:
+        return jsonify({'success': False, 'error': 'Vui lòng điền đầy đủ thông tin'}), 400
+
+    existing_item = db.get_shop_item(item_id)
+    if existing_item:
+        return jsonify({'success': False, 'error': 'ID item đã tồn tại'}), 400
+
+    if db.add_shop_item(item_id, name, price):
+        return jsonify({'success': True, 'message': 'Thêm item thành công'})
+    else:
+        return jsonify({'success': False, 'error': 'Không thể thêm item'}), 500
+
+@admin_bp.route('/api/admin/shop/update', methods=['POST'])
+@api_admin_required
+def admin_update_shop_item():
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'Không có dữ liệu'}), 400
+
+    item_id = data.get('id', '').strip()
+    name = data.get('name', '').strip()
+    price = data.get('price', 0)
+
+    if not item_id or not name or price <= 0:
+        return jsonify({'success': False, 'error': 'Vui lòng điền đầy đủ thông tin'}), 400
+
+    if db.update_shop_item(item_id, name, price):
+        return jsonify({'success': True, 'message': 'Cập nhật item thành công'})
+    else:
+        return jsonify({'success': False, 'error': 'Không thể cập nhật item'}), 500
+
+@admin_bp.route('/api/admin/shop/delete', methods=['POST'])
+@api_admin_required
+def admin_delete_shop_item():
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'Không có dữ liệu'}), 400
+
+    item_id = data.get('id', '').strip()
+
+    if not item_id:
+        return jsonify({'success': False, 'error': 'Thiếu ID item'}), 400
+
+    if db.delete_shop_item(item_id):
+        return jsonify({'success': True, 'message': 'Xóa item thành công'})
+    else:
+        return jsonify({'success': False, 'error': 'Không thể xóa item'}), 500

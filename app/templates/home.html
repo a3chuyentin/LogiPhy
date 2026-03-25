@@ -31,19 +31,19 @@
         <div id="selected-item-display" class="selected-item-box"></div>
 
         <div class="tabs-nav">
-            <button class="tab-btn" onclick="switchTab('learning')">
+            <button class="tab-btn" onclick="homePage.switchTab('learning')">
                 <span>📚</span> Học tập
             </button>
-            <button class="tab-btn" onclick="switchTab('inventory')">
+            <button class="tab-btn" onclick="homePage.switchTab('inventory')">
                 <span>👑</span> Danh hiệu
             </button>
-            <button class="tab-btn" onclick="switchTab('shop')">
+            <button class="tab-btn" onclick="homePage.switchTab('shop')">
                 <span>🛍️</span> Cửa hàng
             </button>
-            <button class="tab-btn" onclick="switchTab('ranking')">
+            <button class="tab-btn" onclick="homePage.switchTab('ranking')">
                 <span>🏆</span> Xếp hạng
             </button>
-            <button class="tab-btn" onclick="switchTab('settings')">
+            <button class="tab-btn" onclick="homePage.switchTab('settings')">
                 <span>⚙️</span> Cài đặt
             </button>
         </div>
@@ -158,12 +158,6 @@
         </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    switchTab('learning');
-});
-</script>
 {% endblock %}
 {% block linkjs %}
 <script src="{{ url_for('static', filename='js/home.js') }}"></script>

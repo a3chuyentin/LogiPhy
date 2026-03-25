@@ -2,6 +2,7 @@ class AdminPanel {
     constructor() {
         this.currentTab = 'users';
         this.users = [];
+        this.shopItems = [];
         this.init();
     }
 
@@ -9,6 +10,7 @@ class AdminPanel {
         this.bindEvents();
         this.loadUsers();
         this.loadStats();
+        this.loadShopItems();
     }
 
     showPopup(message, type = 'success') {
@@ -194,7 +196,6 @@ class AdminPanel {
         this.showPopup(message, 'error');
     }
 
-    // Các phương thức khác giữ nguyên
     bindEvents() {
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -217,6 +218,10 @@ class AdminPanel {
         document.querySelector('.close')?.addEventListener('click', () => {
             this.closeModal();
         });
+        
+        document.querySelector('.close-item-modal')?.addEventListener('click', () => {
+            this.closeItemModal();
+        });
 
         document.getElementById('save-user-btn')?.addEventListener('click', () => {
             this.saveUserChanges();
@@ -225,11 +230,23 @@ class AdminPanel {
         document.getElementById('delete-user-btn')?.addEventListener('click', () => {
             this.deleteUser();
         });
+        
+        document.getElementById('save-item-btn')?.addEventListener('click', () => {
+            this.saveShopItem();
+        });
+        
+        document.getElementById('delete-item-btn')?.addEventListener('click', () => {
+            this.deleteShopItem();
+        });
 
         window.addEventListener('click', (e) => {
             const modal = document.getElementById('edit-user-modal');
             if (e.target === modal) {
                 this.closeModal();
+            }
+            const itemModal = document.getElementById('edit-item-modal');
+            if (e.target === itemModal) {
+                this.closeItemModal();
             }
         });
     }
@@ -249,6 +266,8 @@ class AdminPanel {
 
         if (tabName === 'stats') {
             this.loadStats();
+        } else if (tabName === 'shop') {
+            this.loadShopItems();
         }
     }
 
@@ -280,7 +299,7 @@ class AdminPanel {
             const row = document.createElement('tr');
             
             const items = [];
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= 20; i++) {
                 if (user[`item${i}`]) items.push(i);
             }
             const itemsText = items.length > 0 ? items.join(', ') : 'Không có';
@@ -489,7 +508,150 @@ class AdminPanel {
         });
     }
 
+    async loadShopItems() {
+        try {
+            const response = await fetch('/api/admin/shop/items');
+            if (response.ok) {
+                const data = await response.json();
+                this.shopItems = data.items;
+                this.renderShopItems();
+            } else {
+                this.showError('Không thể tải danh sách items');
+            }
+        } catch (error) {
+            this.showError('Lỗi kết nối đến server');
+        }
+    }
+
+    renderShopItems() {
+        const tbody = document.getElementById('shop-items-table-body');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        this.shopItems.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${this.escapeHtml(item.id)}</td>
+                <td>${this.escapeHtml(item.name)}</td>
+                <td>${item.price}</td>
+                <td>
+                    <button class="btn btn-primary btn-sm edit-item-btn" data-id="${this.escapeHtml(item.id)}">
+                        <i class="fas fa-edit"></i> Sửa
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        document.querySelectorAll('.edit-item-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.target.closest('.edit-item-btn').dataset.id;
+                this.openEditItemModal(id);
+            });
+        });
+    }
+
+    showAddItemModal() {
+        document.getElementById('item-modal-title').textContent = 'Thêm item mới';
+        document.getElementById('edit-item-id').value = '';
+        document.getElementById('item-id').value = '';
+        document.getElementById('item-id').disabled = false;
+        document.getElementById('item-name').value = '';
+        document.getElementById('item-price').value = '';
+        document.getElementById('delete-item-btn').style.display = 'none';
+        document.getElementById('edit-item-modal').style.display = 'flex';
+    }
+
+    openEditItemModal(id) {
+        const item = this.shopItems.find(i => i.id === id);
+        if (!item) return;
+
+        document.getElementById('item-modal-title').textContent = 'Sửa item';
+        document.getElementById('edit-item-id').value = item.id;
+        document.getElementById('item-id').value = item.id;
+        document.getElementById('item-id').disabled = true;
+        document.getElementById('item-name').value = item.name;
+        document.getElementById('item-price').value = item.price;
+        document.getElementById('delete-item-btn').style.display = 'block';
+        document.getElementById('edit-item-modal').style.display = 'flex';
+    }
+
+    closeItemModal() {
+        document.getElementById('edit-item-modal').style.display = 'none';
+        document.getElementById('item-id').disabled = false;
+    }
+
+    async saveShopItem() {
+        const id = document.getElementById('item-id').value;
+        const name = document.getElementById('item-name').value;
+        const price = parseInt(document.getElementById('item-price').value);
+        const originalId = document.getElementById('edit-item-id').value;
+
+        if (!id || !name || !price || price <= 0) {
+            this.showError('Vui lòng điền đầy đủ thông tin hợp lệ');
+            return;
+        }
+
+        let url = '/api/admin/shop/add';
+        let method = 'POST';
+        let body = { id, name, price };
+
+        if (originalId) {
+            url = '/api/admin/shop/update';
+            body = { id: originalId, name, price };
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                this.showSuccess(data.message);
+                this.closeItemModal();
+                this.loadShopItems();
+            } else {
+                this.showError(data.error || 'Không thể lưu item');
+            }
+        } catch (error) {
+            this.showError('Lỗi kết nối đến server');
+        }
+    }
+
+    async deleteShopItem() {
+        const id = document.getElementById('edit-item-id').value;
+        
+        const confirmed = await this.showConfirmPopup(`Bạn có chắc muốn xóa item "${id}"?`);
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch('/api/admin/shop/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                this.showSuccess(data.message);
+                this.closeItemModal();
+                this.loadShopItems();
+            } else {
+                this.showError(data.error || 'Không thể xóa item');
+            }
+        } catch (error) {
+            this.showError('Lỗi kết nối đến server');
+        }
+    }
+
     escapeHtml(unsafe) {
+        if (!unsafe) return '';
         return unsafe
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
@@ -499,6 +661,11 @@ class AdminPanel {
     }
 }
 
+let adminPanel;
+
 document.addEventListener('DOMContentLoaded', () => {
-    new AdminPanel();
+    adminPanel = new AdminPanel();
+    window.adminPanel = adminPanel;
+    window.closeConfirmModal = () => adminPanel && adminPanel.closeConfirmModal();
+    window.confirmPurchase = () => adminPanel && adminPanel.confirmPurchase();
 });

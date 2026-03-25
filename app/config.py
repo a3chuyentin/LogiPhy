@@ -36,8 +36,6 @@ class Config:
     
     PROMPT_DIR = os.getenv('PROMPT_DIR', os.path.join(APP_DIR, 'resources', 'prompts'))
     
-    SHOP_ITEMS_FILE = os.getenv('SHOP_ITEMS_FILE', os.path.join(APP_DIR, 'static', 'json', 'shop.json'))
-    
     STATIC_FOLDER = os.path.join(APP_DIR, 'static')
     
     QUESTION_PROMPT_FILE = os.getenv('QUESTION_PROMPT_FILE', 'question.txt')
@@ -49,8 +47,6 @@ class Config:
     
     @classmethod
     def validate(cls):
-        """Validate required configurations based on service type"""
-        
         if cls.AI_SERVICE_TYPE not in ['gemini', 'lm_studio']:
             raise ValueError(f"Invalid AI_SERVICE_TYPE: {cls.AI_SERVICE_TYPE}. Must be 'gemini' or 'lm_studio'")
         
@@ -68,9 +64,6 @@ class Config:
             
             if not cls.LM_STUDIO_BASE_URL.startswith('http://') and not cls.LM_STUDIO_BASE_URL.startswith('https://'):
                 raise ValueError(f"LM_STUDIO_BASE_URL must start with http:// or https://, got: {cls.LM_STUDIO_BASE_URL}")
-        
-        if cls.SHOP_ITEMS_FILE and not os.path.exists(cls.SHOP_ITEMS_FILE):
-            print(f"Warning: Shop items file not found at {cls.SHOP_ITEMS_FILE}")
         
         if cls.PROMPT_DIR and not os.path.exists(cls.PROMPT_DIR):
             print(f"Warning: Prompt directory not found at {cls.PROMPT_DIR}")

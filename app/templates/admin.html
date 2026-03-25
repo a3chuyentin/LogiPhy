@@ -20,6 +20,7 @@
     <nav class="admin-nav">
         <button class="nav-btn" data-tab="home" onclick="location.href='/'">Trang chủ</button>
         <button class="nav-btn active" data-tab="users">Quản lý Users</button>
+        <button class="nav-btn" data-tab="shop">Quản lý Shop</button>
         <button class="nav-btn" data-tab="stats">Thống kê</button>
         <button class="nav-btn" data-tab="password">Đổi mật khẩu</button>
     </nav>
@@ -47,6 +48,30 @@
                         </tr>
                     </thead>
                     <tbody id="users-table-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="shop-tab" class="tab-content">
+            <div class="tab-header">
+                <h2><i class="fas fa-store"></i> Quản lý Shop Items</h2>
+                <button class="btn btn-primary" onclick="adminPanel.showAddItemModal()">
+                    <i class="fas fa-plus"></i> Thêm item mới
+                </button>
+            </div>
+            
+            <div class="shop-items-table-container">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên danh hiệu</th>
+                            <th>Giá (điểm)</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shop-items-table-body">
                     </tbody>
                 </table>
             </div>
@@ -163,6 +188,34 @@
             <div class="form-actions">
                 <button id="save-user-btn" class="btn btn-primary">Lưu</button>
                 <button id="delete-user-btn" class="btn btn-danger">Xóa User</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="edit-item-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="item-modal-title">Thêm item mới</h3>
+            <span class="close-item-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="edit-item-id">
+            <div class="form-group">
+                <label>ID:</label>
+                <input type="text" id="item-id" class="form-input" placeholder="Ví dụ: item6">
+            </div>
+            <div class="form-group">
+                <label>Tên danh hiệu:</label>
+                <input type="text" id="item-name" class="form-input" placeholder="Nhập tên danh hiệu">
+            </div>
+            <div class="form-group">
+                <label>Giá (điểm):</label>
+                <input type="number" id="item-price" class="form-input" placeholder="Nhập giá">
+            </div>
+            <div class="form-actions">
+                <button id="save-item-btn" class="btn btn-primary">Lưu</button>
+                <button id="delete-item-btn" class="btn btn-danger" style="display:none;">Xóa Item</button>
             </div>
         </div>
     </div>

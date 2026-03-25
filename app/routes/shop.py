@@ -1,9 +1,7 @@
 from flask import Blueprint, request, jsonify, render_template, session
-import json
 import logging
 from app.models.database import Database
 from app.utils.decorators import login_required
-from app.config import Config
 
 shop_bp = Blueprint('shop', __name__)
 db = Database()
@@ -18,9 +16,8 @@ def shop_page():
 @login_required
 def get_shop_items():
     try:
-        with open(Config.SHOP_ITEMS_FILE, 'r', encoding='utf-8') as file:
-            shop_data = json.load(file)
-            return jsonify({'success': True, 'items': shop_data['items']})
+        items = db.get_all_shop_items()
+        return jsonify({'success': True, 'items': items})
     except Exception as e:
         logger.error(f"Error loading shop items: {str(e)}")
         return jsonify({'success': False, 'error': 'Không thể tải danh sách items'}), 500
@@ -48,14 +45,7 @@ def buy_item():
         if not user_data:
             return jsonify({'success': False, 'message': 'Không tìm thấy thông tin user'}), 404
 
-        with open(Config.SHOP_ITEMS_FILE, 'r', encoding='utf-8') as file:
-            shop_data = json.load(file)
-
-        item_info = None
-        for item in shop_data['items']:
-            if item['id'] == item_id:
-                item_info = item
-                break
+        item_info = db.get_shop_item(item_id)
 
         if not item_info:
             return jsonify({'success': False, 'message': 'Item không tồn tại'}), 404
@@ -111,11 +101,10 @@ def get_inventory():
         if not user_data:
             return jsonify({'success': False, 'error': 'Không tìm thấy user'}), 404
 
-        with open(Config.SHOP_ITEMS_FILE, 'r', encoding='utf-8') as file:
-            shop_data = json.load(file)
+        all_items = db.get_all_shop_items()
 
         inventory = []
-        for item in shop_data['items']:
+        for item in all_items:
             item_id = item['id']
             if user_data.get(item_id, False):
                 inventory.append({

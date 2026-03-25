@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, session
+from flask import Blueprint, jsonify, session, request
 import logging
 from app.models.database import Database
 from app.utils.decorators import login_required, api_login_required
@@ -12,15 +12,21 @@ logger = logging.getLogger(__name__)
 def get_rankings():
     try:
         rankings = db.get_rankings(limit=50)
+        
+        all_items = db.get_all_shop_items()
+        items_dict = {item['id']: item['name'] for item in all_items}
 
         rank_data = []
         for rank, user_data in enumerate(rankings, 1):
-            logger.info(f"User {user_data['username']} - selecteditem: {user_data.get('selecteditem')}")
+            selected_item = user_data.get('selecteditem', 'none')
+            item_name = items_dict.get(selected_item, None) if selected_item != 'none' else None
+            
             rank_data.append({
                 'rank': rank,
                 'username': user_data['username'],
                 'totalpoint': user_data['totalpoint'],
-                'selecteditem': user_data.get('selecteditem', 'none')
+                'selecteditem': selected_item,
+                'item_name': item_name
             })
 
         logger.info(f"Rankings data: {rank_data}")

@@ -31,22 +31,26 @@ class Database:
                 )
             ''')
             
-            try:
-                with open(Config.SHOP_ITEMS_FILE, 'r', encoding='utf-8') as file:
-                    shop_data = json.load(file)
-                    shop_items = shop_data.get('items', [])
-                    
-                cursor.execute("PRAGMA table_info(users)")
-                existing_columns = [column[1] for column in cursor.fetchall()]
-                
-                for item in shop_items:
-                    item_id = item['id']
-                    if item_id not in existing_columns:
-                        cursor.execute(f"ALTER TABLE users ADD COLUMN {item_id} BOOLEAN DEFAULT 0")
-                        logger.info(f"Added column {item_id} to users table")
-                        
-            except Exception as e:
-                logger.error(f"Error loading shop items for DB init: {str(e)}")
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS shop_items (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    price INTEGER NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            cursor.execute("PRAGMA table_info(users)")
+            existing_columns = [column[1] for column in cursor.fetchall()]
+            
+            cursor.execute("SELECT id FROM shop_items")
+            shop_items = cursor.fetchall()
+            
+            for item in shop_items:
+                item_id = item[0]
+                if item_id not in existing_columns:
+                    cursor.execute(f"ALTER TABLE users ADD COLUMN {item_id} BOOLEAN DEFAULT 0")
+                    logger.info(f"Added column {item_id} to users table")
             
             cursor.execute("SELECT * FROM users WHERE username = 'admin'")
             if not cursor.fetchone():
@@ -89,17 +93,12 @@ class Database:
                 VALUES (?, ?, 0, 0, 'none')
             ''', (username, hashed_password))
             
-            try:
-                with open(Config.SHOP_ITEMS_FILE, 'r', encoding='utf-8') as file:
-                    shop_data = json.load(file)
-                    shop_items = shop_data.get('items', [])
-                    
-                for item in shop_items:
-                    item_id = item['id']
-                    cursor.execute(f"UPDATE users SET {item_id} = 0 WHERE username = ?", (username,))
-                    
-            except Exception as e:
-                logger.error(f"Error initializing items for new user: {str(e)}")
+            cursor.execute("SELECT id FROM shop_items")
+            shop_items = cursor.fetchall()
+            
+            for item in shop_items:
+                item_id = item[0]
+                cursor.execute(f"UPDATE users SET {item_id} = 0 WHERE username = ?", (username,))
             
             conn.commit()
             return True
@@ -197,3 +196,68 @@ class Database:
             cursor.execute("DELETE FROM users WHERE username = ?", (username,))
             conn.commit()
             return cursor.rowcount > 0
+
+    def get_all_shop_items(self) -> List[Dict[str, Any]]:
+        with self.get_connection() as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, name, price FROM shop_items ORDER BY price ASC")
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_shop_item(self, item_id: str) -> Optional[Dict[str, Any]]:
+        with self.get_connection() as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, name, price FROM shop_items WHERE id = ?", (item_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def add_shop_item(self, item_id: str, name: str, price: int) -> bool:
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO shop_items (id, name, price)
+                    VALUES (?, ?, ?)
+                ''', (item_id, name, price))
+                
+                cursor.execute("ALTER TABLE users ADD COLUMN {} BOOLEAN DEFAULT 0".format(item_id))
+                
+                cursor.execute("SELECT username FROM users")
+                users = cursor.fetchall()
+                for user in users:
+                    cursor.execute(f"UPDATE users SET {item_id} = 0 WHERE username = ?", (user[0],))
+                
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error adding shop item: {str(e)}")
+            return False
+
+    def update_shop_item(self, item_id: str, name: str, price: int) -> bool:
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE shop_items 
+                SET name = ?, price = ?
+                WHERE id = ?
+            ''', (name, price, item_id))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def delete_shop_item(self, item_id: str) -> bool:
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM shop_items WHERE id = ?", (item_id,))
+                
+                cursor.execute("PRAGMA table_info(users)")
+                columns = [column[1] for column in cursor.fetchall()]
+                if item_id in columns:
+                    cursor.execute(f"ALTER TABLE users DROP COLUMN {item_id}")
+                
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            logger.error(f"Error deleting shop item: {str(e)}")
+            return False
