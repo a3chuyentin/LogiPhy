@@ -7,7 +7,6 @@
     padding: 1.25rem;
     position: relative;
     z-index: 1;
-    background: linear-gradient(135deg, #4284DB 0%, #29EAC4 50%, #4284DB 100%);
 }
 
 .glow-wrapper {
