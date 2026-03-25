@@ -1,7 +1,6 @@
 .admin-container {
     width: 100%;
     min-height: 100vh;
-    background: linear-gradient(135deg, rgba(66, 132, 219, 0.95) 0%, rgba(41, 234, 196, 0.95) 100%);
     position: relative;
     z-index: 10;
     overflow-y: auto;
