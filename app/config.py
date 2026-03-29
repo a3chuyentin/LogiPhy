@@ -18,7 +18,7 @@ class Config:
     LM_STUDIO_MODEL = os.getenv('LM_STUDIO_MODEL', 'local-model')
     LM_STUDIO_TIMEOUT = int(os.getenv('LM_STUDIO_TIMEOUT', '120')) 
     
-    AI_TEMPERATURE = float(os.getenv('AI_TEMPERATURE', '0.7'))
+    AI_TEMPERATURE = float(os.getenv('AI_TEMPERATURE', '0.2'))
     AI_MAX_TOKENS = int(os.getenv('AI_MAX_TOKENS', '8192'))
     
     DATABASE_PATH = os.getenv('DATABASE_PATH', 'users.db')
