@@ -85,24 +85,47 @@ function showAlert(message, type = 'error') {
         `;
         document.body.appendChild(popup);
     }
+    
     popup.querySelector('p').textContent = message;
     popup.style.borderColor = type === 'success' ? 'rgba(76,175,80,0.8)' : 'rgba(244,67,54,0.8)';
-    popup.querySelector('#popup-view-solution').onclick = () => {
+    
+    popup.dataset.type = type;
+    
+    const viewSolutionBtn = popup.querySelector('#popup-view-solution');
+    const continueBtn = popup.querySelector('#popup-continue');
+    
+    const newViewBtn = viewSolutionBtn.cloneNode(true);
+    const newContinueBtn = continueBtn.cloneNode(true);
+    viewSolutionBtn.parentNode.replaceChild(newViewBtn, viewSolutionBtn);
+    continueBtn.parentNode.replaceChild(newContinueBtn, continueBtn);
+    
+    newViewBtn.onclick = () => {
         popup.remove();
         hideBlocker();
         QuestionManager.showFullSolution();
+        if (popup.autoCloseTimeout) clearTimeout(popup.autoCloseTimeout);
     };
-    popup.querySelector('#popup-continue').onclick = () => {
+    
+    newContinueBtn.onclick = () => {
         window.location.reload();
+        if (popup.autoCloseTimeout) clearTimeout(popup.autoCloseTimeout);
     };
+    
     popup.style.opacity = '1';
     popup.style.transform = 'translate(-50%, -50%) scale(1)';
-    setTimeout(() => {
+    
+    if (popup.autoCloseTimeout) clearTimeout(popup.autoCloseTimeout);
+    
+    popup.autoCloseTimeout = setTimeout(() => {
         if (popup.parentNode) {
             popup.remove();
             hideBlocker();
+            
+            if (type === 'success') {
+                QuestionManager.showFullSolution();
+            }
         }
-    }, 5000);
+    }, 3000);
 }
 
 class ApiService {
@@ -341,6 +364,15 @@ window.submitAnswer = () => QuestionManager.submitAnswer();
 
 customElements.whenDefined('math-field').then(() => {
     const mf = document.getElementById('question');
+    if (mf) {
+        mf.defaultMode = 'text';
+        mf.mode = 'text';
+        mf.smartMode = true;
+    }
+});
+
+customElements.whenDefined('math-field').then(() => {
+    const mf = document.getElementById('user-answer');
     if (mf) {
         mf.defaultMode = 'text';
         mf.mode = 'text';

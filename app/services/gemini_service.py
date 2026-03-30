@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any
 from google import genai
 from google.genai import types
 from app.config import Config
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ class GeminiService:
                 raw = raw[:-3]
             raw = raw.strip()
 
+            raw = re.sub(r'\\(?!n)', r'\\\\', raw)
             raw = raw.replace('§', '\\\\')
             return yaml.safe_load(raw)
 

@@ -2,6 +2,7 @@ import requests
 import logging
 import yaml
 from typing import Optional, Dict, Any
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,7 @@ class LMStudioService:
                 raw = raw[:-3]
             raw = raw.strip()
 
+            raw = re.sub(r'\\(?!n)', r'\\\\', raw)
             raw = raw.replace('§', '\\\\')
             return yaml.safe_load(raw)
 

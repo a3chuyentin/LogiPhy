@@ -93,33 +93,68 @@ def process_answer():
     try:
         ai_service = get_ai_service()
         compare_result = ai_service.generate_question(prompt)
-        logger.info(f"Comparison result for question: {question}")
         
         try:
-            if compare_result and isinstance(compare_result, list) and len(compare_result) > 0:
-                json_data = compare_result[0]
-                if json_data.get('acstatus', "false") == "true":
-                    if f"score_{question_id}" in session:
-                        earned_point = session[f"score_{question_id}"]
+            json_data = None
+            if compare_result:
+                if isinstance(compare_result, list) and len(compare_result) > 0:
+                    json_data = compare_result[0]
+                elif isinstance(compare_result, dict):
+                    json_data = compare_result
+                else:
+                    logging.error(f"Unexpected type: {type(compare_result)}")
+            
+            if json_data:
+                acstatus = json_data.get('acstatus', "false")
+                
+                if str(acstatus).lower() == "true":
+                    
+                    session_key = f"score_{question_id}"
+                    
+                    if session_key in session:
+                        earned_point = session[session_key]
+                        
                         user_data = db.get_user_data(session['username'])
+                        
                         if user_data is not None:
                             total_point = user_data.get('totalpoint', 0) + earned_point
                             current_point = user_data.get('currentpoint', 0) + earned_point
-                            db.update_points(session['username'], total_point, current_point)
-                            logger.info(f"Updated points: {total_point}/{current_point}")
+                            
+                            success = db.update_points(session['username'], total_point, current_point)
+                            if success:
+                                verify = db.get_user_data(session['username'])
+                            else:
+                                logging.error(f"update_points returned False")
+                        else:
+                            logging.error(f"User data not found")
+                    else:
+                        logging.error(f"Session key {session_key} not found!")
+                else:
+                    logging.error(f"Answer INCORRECT (acstatus={acstatus})")
+            else:
+                logging.info(f"No valid json_data found")
+                
         except Exception as e:
-            logger.error(f"Error updating points: {e}")
-            logger.info("Sai câu trả lời.")
+            logging.error(f"Error in points update: {e}")
+            import traceback
+            traceback.print_exc()
 
         session[f"score_{question_id}"] = 0
         
+        if isinstance(compare_result, list):
+            response_data = compare_result
+        else:
+            response_data = [compare_result]
+        
         return Response(
-            json.dumps(compare_result, ensure_ascii=False),
+            json.dumps(response_data, ensure_ascii=False),
             mimetype='application/json'
         )
         
     except Exception as e:
-        logger.error(f"Error processing answer: {str(e)}")
+        logging.error(f"Error processing answer: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': 'Có lỗi xảy ra khi xử lý câu trả lời'}), 500
 
 @handle_bp.route('/api/new_session_id', methods=['POST'])
