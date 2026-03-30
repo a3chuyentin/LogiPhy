@@ -58,7 +58,7 @@ class GeminiService:
                 raw = raw[:-3]
             raw = raw.strip()
 
-            raw = re.sub(r'\\(?!n)', r'\\\\', raw)
+            raw = re.sub(r'\\(?![nN])', r'\\\\', raw)
             raw = raw.replace('§', '\\\\')
             return yaml.safe_load(raw)
 
