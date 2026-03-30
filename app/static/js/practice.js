@@ -347,3 +347,12 @@ customElements.whenDefined('math-field').then(() => {
         mf.smartMode = true;
     }
 });
+
+customElements.whenDefined('math-field').then(() => {
+    const mf = document.getElementById('user-answer');
+    if (mf) {
+        mf.defaultMode = 'text';
+        mf.mode = 'text';
+        mf.smartMode = true;
+    }
+});
