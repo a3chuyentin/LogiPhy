@@ -35,4 +35,6 @@ dapan: "Ngoài phạm vi kiến thức"
 CHỈ TRẢ YAML, KHÔNG thêm text khác.
 KHÔNG dùng ```, CHỈ dùng ```yaml duy nhất 1 lần để bao quanh.
 
+BẮT BUỘC TẤT CẢ lệnh LaTeX bắt đầu bằng § thay vì \ để đảm bảo không phạm vi câu lệnh của YAML.
+
 Bài toán: {cau_hoi}

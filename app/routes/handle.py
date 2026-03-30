@@ -93,28 +93,45 @@ def process_answer():
     try:
         ai_service = get_ai_service()
         compare_result = ai_service.generate_question(prompt)
-        logger.info(f"Comparison result for question: {question}")
         
-        try:
-            if compare_result and isinstance(compare_result, list) and len(compare_result) > 0:
-                json_data = compare_result[0]
-                if json_data.get('acstatus', "false") == "true":
-                    if f"score_{question_id}" in session:
-                        earned_point = session[f"score_{question_id}"]
-                        user_data = db.get_user_data(session['username'])
-                        if user_data is not None:
-                            total_point = user_data.get('totalpoint', 0) + earned_point
-                            current_point = user_data.get('currentpoint', 0) + earned_point
-                            db.update_points(session['username'], total_point, current_point)
-                            logger.info(f"Updated points: {total_point}/{current_point}")
-        except Exception as e:
-            logger.error(f"Error updating points: {e}")
-            logger.info("Sai câu trả lời.")
+        json_data = {}
+        if isinstance(compare_result, list) and len(compare_result) > 0:
+            json_data = compare_result[0]
+        elif isinstance(compare_result, dict):
+            json_data = compare_result
+        else:
+            try:
+                json_data = json.loads(compare_result)
+            except:
+                json_data = {"acstatus": "false"}
 
-        session[f"score_{question_id}"] = 0
-        
+        if str(json_data.get('acstatus', 'false')).lower() == 'true':
+            session_key = f"score_{question_id}"
+            
+            if session_key in session:
+                try:
+                    earned_point = int(session.get(session_key, 0))
+                    
+                    if earned_point > 0:
+                        user_data = db.get_user_data(session['username'])
+                        if user_data:
+                            current_total = int(user_data.get('totalpoint', 0))
+                            current_bal = int(user_data.get('currentpoint', 0))
+                            
+                            new_total = current_total + earned_point
+                            new_current = current_bal + earned_point
+                            
+                            db.update_points(session['username'], new_total, new_current)
+                            
+                            json_data['new_current_balance'] = new_current
+                            logger.info(f"User {session['username']} trả lời đúng. Cộng {earned_point} điểm.")
+                except Exception as e:
+                    logger.error(f"Lỗi khi tính toán hoặc cập nhật điểm: {e}")
+
+        session.pop(f"score_{question_id}", None)
+
         return Response(
-            json.dumps(compare_result, ensure_ascii=False),
+            json.dumps(json_data, ensure_ascii=False),
             mimetype='application/json'
         )
         
