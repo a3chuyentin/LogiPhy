@@ -229,3 +229,10 @@
 .duration-300 { transition-duration: 300ms; }
 .ease-in-out { transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
 .hover\:underline:hover { text-decoration: underline; }
+
+.welcome-header img {
+    max-width: 70%;
+    width: 100%;
+    height: auto;
+    border-radius: 5%;
+}
