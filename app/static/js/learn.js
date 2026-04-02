@@ -170,7 +170,10 @@ class MathLearning {
 
         const questionField = document.getElementById('question');
         const questionContent = questionField?.getValue?.() || questionField?.value || '';
-        if (questionContent) problemDiv.innerHTML = `\\[${questionContent}\\]`;
+        
+        if (questionContent) {
+            problemDiv.innerHTML = question;
+        }
 
         const questionData = Array.isArray(data) ? data[0] : data;
 

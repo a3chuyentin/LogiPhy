@@ -212,7 +212,10 @@ class QuestionManager {
         solveDiv.innerHTML = '';
 
         const question = DomUtils.getValue(DomUtils.getElement('question'));
-        if (question) problemDiv.innerHTML = `\\[${question}\\]`;
+
+        if (question) {
+            problemDiv.innerHTML = question;
+        }
 
         const qData = Array.isArray(data) ? data[0] : data;
         this.solutionData = qData;
